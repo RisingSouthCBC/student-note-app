@@ -1,0 +1,1291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Observation Hub</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        .bg-gradient-text {
+            background: linear-gradient(to right, rgb(79, 70, 229), rgb(139, 92, 246));
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+    </style>
+</head>
+<body class="min-h-screen bg-slate-50 text-slate-900 font-sans pb-20 overflow-x-hidden">
+    
+    <!-- Header -->
+    <header class="sticky top-0 z-30 bg-white/80 backdrop-blur-md border-b border-slate-200 px-4 py-3 flex items-center justify-between">
+        <h1 class="text-xl font-bold bg-gradient-text">Observation Hub</h1>
+        <div class="flex gap-2">
+            <button id="timelineBtn" class="p-2 rounded-full transition-colors text-slate-500 hover:bg-slate-100 hidden">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <polyline points="12 6 12 12 16 14"></polyline>
+                </svg>
+            </button>
+            <button id="customTablesBtn" class="p-2 text-slate-500 hover:bg-slate-100 rounded-full transition-colors" title="Settings">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="3"></circle>
+                    <path d="M12 1v6m0 6v6m0-13a9 9 0 0 1 9 9 9 9 0 0 1-9 9 9 9 0 0 1-9-9 9 9 0 0 1 9-9z"></path>
+                    <path d="M12 1v6m0 6v6M1 12h6m6 0h6"></path>
+                    <path d="M4.22 4.22l1.42 1.42m12.72 12.72 1.42 1.42M4.22 19.78l1.42-1.42m12.72-12.72 1.42-1.42"></path>
+                </svg>
+            </button>
+            <button id="setupBtn" class="p-2 text-slate-500 hover:bg-slate-100 rounded-full transition-colors">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
+                    <circle cx="9" cy="7" r="4"></circle>
+                    <line x1="19" y1="8" x2="19" y2="14"></line>
+                    <line x1="22" y1="11" x2="16" y2="11"></line>
+                </svg>
+            </button>
+        </div>
+    </header>
+
+    <main id="mainContent" class="max-w-4xl mx-auto p-4"></main>
+
+    <!-- Floating Action Button -->
+    <div id="fab" class="fixed bottom-6 right-6 hidden">
+        <button onclick="showSetup()" class="w-14 h-14 bg-indigo-600 text-white rounded-full shadow-xl flex items-center justify-center hover:scale-110 active:scale-90 transition-all">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="12" y1="5" x2="12" y2="19"></line>
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
+        </button>
+    </div>
+
+    <!-- Student Overlay -->
+    <div id="studentOverlay" class="fixed inset-0 z-50 hidden items-end sm:items-center justify-center p-0 sm:p-4 bg-slate-900/60 backdrop-blur-sm">
+        <div class="bg-white w-full max-w-2xl h-[95vh] sm:h-auto sm:max-h-[90vh] rounded-t-[2.5rem] sm:rounded-[2.5rem] shadow-2xl flex flex-col overflow-hidden">
+            <div class="p-6 pb-4 flex items-center justify-between border-b border-slate-100">
+                <h2 id="studentName" class="text-2xl font-extrabold text-slate-900"></h2>
+                <button onclick="closeStudentOverlay()" class="p-2 bg-slate-100 rounded-full text-slate-400 hover:text-slate-600">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
+            <div id="studentContent" class="flex-1 overflow-y-auto p-6 space-y-8 pb-10"></div>
+        </div>
+    </div>
+
+    <!-- Custom Tables Manager Overlay -->
+    <div id="customTablesOverlay" class="fixed inset-0 z-50 hidden items-end sm:items-center justify-center p-0 sm:p-4 bg-slate-900/60 backdrop-blur-sm">
+        <div class="bg-white w-full max-w-2xl h-[95vh] sm:h-auto sm:max-h-[90vh] rounded-t-[2.5rem] sm:rounded-[2.5rem] shadow-2xl flex flex-col overflow-hidden">
+            <div class="p-6 pb-4 flex items-center justify-between border-b border-slate-100">
+                <h2 class="text-2xl font-extrabold text-slate-900">Custom Tablets</h2>
+                <button onclick="closeCustomTablesOverlay()" class="p-2 bg-slate-100 rounded-full text-slate-400 hover:text-slate-600">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
+            <div id="customTablesContent" class="flex-1 overflow-y-auto p-6 space-y-6 pb-10"></div>
+        </div>
+    </div>
+
+    <script>
+        const STORAGE_KEY = 'teacher_hub_data';
+        const CUSTOM_TABLETS_KEY = 'custom_tablets';
+        const PASSWORD_KEY = 'app_password';
+        let students = [];
+        let notes = [];
+        let customTablets = {};
+        let currentView = 'welcome';
+        let selectedStudentId = null;
+        let searchTerm = '';
+        let sortBy = 'first_name';
+        let isAuthenticated = false;
+        
+        // Observation state
+        let activeCategory = null;
+        let activeSubject = null;
+        let activeSub = null;
+        let noteText = '';
+
+        let OBSERVATION_TREE = {
+            academic: {
+                label: 'Academic',
+                color: 'bg-blue-100 text-blue-700 border-blue-200',
+                icon: '📚',
+                subjects: {
+                    literacy: {
+                        label: 'Literacy',
+                        sub: {
+                            reading: { label: 'Reading', bubbles: ['Fluent reading', 'Decoding issues', 'Strong comprehension', 'Struggling with inference', 'Phonics focus'] },
+                            writing: { label: 'Writing', bubbles: ['Excellent structure', 'Grammar errors', 'Creative ideas', 'Fine motor struggle', 'Spelling support'] }
+                        }
+                    },
+                    math: {
+                        label: 'Math',
+                        sub: {
+                            calculation: { label: 'Calculation', bubbles: ['Quick recall', 'Computational error', 'Used manipulatives', 'Mental math strong', 'Place value confusion'] },
+                            reasoning: { label: 'Problem Solving', bubbles: ['Clear logic', 'Stuck on word problems', 'Abstracted concept', 'Alternative method used'] }
+                        }
+                    },
+                    science: {
+                        label: 'Science',
+                        sub: {
+                            inquiry: { label: 'Inquiry', bubbles: ['Curious questions', 'Safe lab practice', 'Strong hypothesis', 'Detailed observation', 'Data collection'] }
+                        }
+                    },
+                    general_aca: {
+                        label: 'General',
+                        sub: {
+                            study_skills: { label: 'Study Skills', bubbles: ['Followed rubric', 'Self-corrected', 'Required 1:1', 'Used resources', 'Peer tutoring'] }
+                        }
+                    }
+                }
+            },
+            behavior: {
+                label: 'Behavior',
+                color: 'bg-amber-100 text-amber-700 border-amber-200',
+                icon: '⚠️',
+                sub: {
+                    disruption: { label: 'Disruption', bubbles: ['Calling out', 'Talking to peers', 'Off-task', 'Out of seat', 'Noise making', 'Work refusal'] },
+                    social: { label: 'Social Skills', bubbles: ['Conflict with peer', 'Excluding others', 'Difficulty sharing', 'Physical contact', 'Collaborative', 'Inclusive behavior'] },
+                    executive: { label: 'Executive Function', bubbles: ['Difficulty starting', 'Lost materials', 'Poor time management', 'Organized', 'Impulse control'] }
+                }
+            },
+            wellbeing: {
+                label: 'Wellbeing',
+                color: 'bg-emerald-100 text-emerald-700 border-emerald-200',
+                icon: '❤️',
+                sub: {
+                    emotional: { label: 'Emotional', bubbles: ['Anxious', 'High energy', 'Regulated', 'Frustrated', 'Low confidence', 'Proud of work'] },
+                    physical: { label: 'Physical', bubbles: ['Tired/Sleepy', 'Hungry', 'Injured', 'Sent to nurse', 'Sensory seeking', 'Sensory avoiding'] },
+                    home: { label: 'Home/General', bubbles: ['Family update', 'Uniform issue', 'Positive news', 'Change in routine'] }
+                }
+            }
+        };
+
+        const FLAGS = [
+            { id: 'iep', label: 'IEP', icon: '📋', color: 'text-purple-600', bg: 'bg-purple-50' },
+            { id: 'diagnosis', label: 'Diagnosis', icon: '🩺', color: 'text-indigo-600', bg: 'bg-indigo-50' },
+            { id: 'rmp', label: 'RMP', icon: '🛡️', color: 'text-rose-600', bg: 'bg-rose-50' },
+            { id: 'behavioral', label: 'Behavioral', icon: '⚠️', color: 'text-orange-600', bg: 'bg-orange-50' }
+        ];
+
+        // Load data
+        function loadData() {
+            // Check if password exists and auto-login is possible (for development)
+            const hasPassword = localStorage.getItem(PASSWORD_KEY);
+            if (hasPassword) {
+                // User needs to authenticate
+                isAuthenticated = false;
+                currentView = 'welcome';
+            } else {
+                // First time, show welcome setup
+                isAuthenticated = false;
+                currentView = 'welcome';
+            }
+            
+            const saved = localStorage.getItem(STORAGE_KEY);
+            if (saved) {
+                const data = JSON.parse(saved);
+                students = data.students || [];
+                notes = data.notes || [];
+            }
+            const customSaved = localStorage.getItem(CUSTOM_TABLETS_KEY);
+            if (customSaved) {
+                customTablets = JSON.parse(customSaved);
+            }
+            // Load custom observation tree (categories and sub-categories)
+            const treeSaved = localStorage.getItem('observation_tree');
+            if (treeSaved) {
+                OBSERVATION_TREE = JSON.parse(treeSaved);
+            }
+            // Load saved sort preference
+            const savedSort = localStorage.getItem('sortBy');
+            if (savedSort) {
+                sortBy = savedSort;
+            }
+        }
+
+        // Save data
+        function saveData() {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify({ students, notes }));
+        }
+
+        function saveCustomTablets() {
+            localStorage.setItem(CUSTOM_TABLETS_KEY, JSON.stringify(customTablets));
+            // Also save the observation tree structure for custom categories/sub-categories
+            localStorage.setItem('observation_tree', JSON.stringify(OBSERVATION_TREE));
+        }
+
+        // Render functions
+        function render() {
+            const main = document.getElementById('mainContent');
+            const timelineBtn = document.getElementById('timelineBtn');
+            const fab = document.getElementById('fab');
+
+            // Check authentication first
+            if (!isAuthenticated) {
+                renderWelcome(main);
+                timelineBtn.classList.add('hidden');
+                fab.classList.add('hidden');
+                return;
+            }
+
+            if (students.length > 0) {
+                timelineBtn.classList.remove('hidden');
+            } else {
+                timelineBtn.classList.add('hidden');
+            }
+
+            if (currentView === 'dashboard') {
+                renderDashboard(main);
+                fab.classList.toggle('hidden', selectedStudentId !== null);
+            } else if (currentView === 'setup') {
+                renderSetup(main);
+                fab.classList.add('hidden');
+            } else if (currentView === 'all-notes') {
+                renderAllNotes(main);
+                fab.classList.add('hidden');
+            }
+        }
+
+        function renderWelcome(container) {
+            const hasPassword = localStorage.getItem(PASSWORD_KEY);
+            
+            if (!hasPassword) {
+                // First time setup
+                container.innerHTML = `
+                    <div class="min-h-[80vh] flex items-center justify-center">
+                        <div class="text-center max-w-md px-6">
+                            <div class="mb-8">
+                                <h1 class="text-4xl font-bold bg-gradient-to-r from-indigo-600 to-violet-600 bg-clip-text text-transparent mb-3">
+                                    Student Observation Hub
+                                </h1>
+                                <p class="text-slate-600 text-lg">Keep track of student observations, notes, and progress all in one place.</p>
+                            </div>
+                            
+                            <div class="bg-white p-8 rounded-3xl shadow-lg border border-slate-200 mb-6">
+                                <h2 class="text-xl font-semibold mb-4">Create Your PIN</h2>
+                                <p class="text-sm text-slate-600 mb-4">Set a 4-digit PIN to secure your observation hub</p>
+                                <div class="mb-4">
+                                    <div id="pinDisplay" class="flex justify-center gap-2 mb-2">
+                                        <div class="w-12 h-12 rounded-xl border-2 border-slate-300 flex items-center justify-center text-2xl" id="digit1"></div>
+                                        <div class="w-12 h-12 rounded-xl border-2 border-slate-300 flex items-center justify-center text-2xl" id="digit2"></div>
+                                        <div class="w-12 h-12 rounded-xl border-2 border-slate-300 flex items-center justify-center text-2xl" id="digit3"></div>
+                                        <div class="w-12 h-12 rounded-xl border-2 border-slate-300 flex items-center justify-center text-2xl" id="digit4"></div>
+                                    </div>
+                                    <p class="text-xs text-slate-500" id="pinStatus">Enter your PIN</p>
+                                </div>
+                                <div class="grid grid-cols-3 gap-2 mb-4">
+                                    ${[1,2,3,4,5,6,7,8,9].map(n => `<button onclick="addDigit(${n})" class="py-4 text-xl font-semibold bg-slate-100 hover:bg-slate-200 rounded-xl transition-all">${n}</button>`).join('')}
+                                    <button onclick="clearPin()" class="py-4 text-sm font-semibold bg-slate-100 hover:bg-slate-200 rounded-xl transition-all">Clear</button>
+                                    <button onclick="addDigit(0)" class="py-4 text-xl font-semibold bg-slate-100 hover:bg-slate-200 rounded-xl transition-all">0</button>
+                                    <button onclick="deleteDigit()" class="py-4 text-sm font-semibold bg-slate-100 hover:bg-slate-200 rounded-xl transition-all">←</button>
+                                </div>
+                            </div>
+
+                            <a href="https://www.buymeacoffee.com/yourusername" target="_blank" 
+                                class="inline-flex items-center gap-2 px-6 py-3 bg-yellow-400 text-slate-900 font-semibold rounded-2xl hover:bg-yellow-500 transition-all shadow-md">
+                                ☕ Buy Me a Coffee
+                            </a>
+                            
+                            <p class="text-xs text-slate-400 mt-6">Made with ❤️ for teachers</p>
+                        </div>
+                    </div>
+                `;
+            } else {
+                // Login screen
+                container.innerHTML = `
+                    <div class="min-h-[80vh] flex items-center justify-center">
+                        <div class="text-center max-w-md px-6">
+                            <div class="mb-8">
+                                <h1 class="text-4xl font-bold bg-gradient-to-r from-indigo-600 to-violet-600 bg-clip-text text-transparent mb-3">
+                                    Welcome Back
+                                </h1>
+                                <p class="text-slate-600">Enter your PIN to continue</p>
+                            </div>
+                            
+                            <div class="bg-white p-8 rounded-3xl shadow-lg border border-slate-200 mb-6">
+                                <div class="mb-4">
+                                    <div id="pinDisplay" class="flex justify-center gap-2 mb-2">
+                                        <div class="w-12 h-12 rounded-xl border-2 border-slate-300 flex items-center justify-center text-2xl" id="digit1"></div>
+                                        <div class="w-12 h-12 rounded-xl border-2 border-slate-300 flex items-center justify-center text-2xl" id="digit2"></div>
+                                        <div class="w-12 h-12 rounded-xl border-2 border-slate-300 flex items-center justify-center text-2xl" id="digit3"></div>
+                                        <div class="w-12 h-12 rounded-xl border-2 border-slate-300 flex items-center justify-center text-2xl" id="digit4"></div>
+                                    </div>
+                                    <p class="text-xs text-rose-500 hidden" id="pinError">Incorrect PIN</p>
+                                </div>
+                                <div class="grid grid-cols-3 gap-2 mb-4">
+                                    ${[1,2,3,4,5,6,7,8,9].map(n => `<button onclick="addDigit(${n})" class="py-4 text-xl font-semibold bg-slate-100 hover:bg-slate-200 rounded-xl transition-all">${n}</button>`).join('')}
+                                    <button onclick="clearPin()" class="py-4 text-sm font-semibold bg-slate-100 hover:bg-slate-200 rounded-xl transition-all">Clear</button>
+                                    <button onclick="addDigit(0)" class="py-4 text-xl font-semibold bg-slate-100 hover:bg-slate-200 rounded-xl transition-all">0</button>
+                                    <button onclick="deleteDigit()" class="py-4 text-sm font-semibold bg-slate-100 hover:bg-slate-200 rounded-xl transition-all">←</button>
+                                </div>
+                                <button onclick="resetPin()" class="w-full mt-3 text-sm text-slate-500 hover:text-slate-700">
+                                    Forgot PIN? Reset App
+                                </button>
+                            </div>
+
+                            <a href="https://www.buymeacoffee.com/yourusername" target="_blank" 
+                                class="inline-flex items-center gap-2 px-6 py-3 bg-yellow-400 text-slate-900 font-semibold rounded-2xl hover:bg-yellow-500 transition-all shadow-md">
+                                ☕ Buy Me a Coffee
+                            </a>
+                            
+                            <p class="text-xs text-slate-400 mt-6">Made with ❤️ for teachers</p>
+                        </div>
+                    </div>
+                `;
+            }
+        }
+
+        function renderDashboard(container) {
+            if (students.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-20">
+                        <svg class="mx-auto text-indigo-500 mb-4 opacity-50" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                            <circle cx="9" cy="7" r="4"></circle>
+                            <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                            <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                        </svg>
+                        <h3 class="text-xl font-bold">No students yet</h3>
+                        <button onclick="showSetup()" class="mt-4 bg-indigo-600 text-white px-8 py-3 rounded-2xl font-semibold">Get Started</button>
+                    </div>
+                `;
+                return;
+            }
+
+            const processed = getProcessedStudents();
+            
+            container.innerHTML = `
+                <div class="space-y-4">
+                    <div class="flex flex-col sm:flex-row gap-3">
+                        <div class="relative flex-1">
+                            <svg class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="11" cy="11" r="8"></circle>
+                                <path d="m21 21-4.35-4.35"></path>
+                            </svg>
+                            <input id="searchInput" type="text" placeholder="Search..." value="${searchTerm}" 
+                                class="w-full pl-12 pr-4 py-3 rounded-2xl bg-white border border-slate-200 shadow-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                        </div>
+                        <div class="relative">
+                            <svg class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="m21 16-4 4-4-4M17 20V4M3 8l4-4 4 4M7 4v16"></path>
+                            </svg>
+                            <select id="sortSelect" value="${sortBy}" class="appearance-none w-full sm:w-48 pl-10 pr-10 py-3 rounded-2xl bg-white border border-slate-200 shadow-sm font-medium text-slate-700">
+                                <option value="first_name">First Name</option>
+                                <option value="last_name">Last Name</option>
+                                <option value="entries">Most Entries</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 md:grid-cols-3 gap-4" id="studentGrid"></div>
+                </div>
+            `;
+
+            document.getElementById('searchInput').addEventListener('input', (e) => {
+                searchTerm = e.target.value;
+                render();
+            });
+
+            document.getElementById('sortSelect').addEventListener('change', (e) => {
+                sortBy = e.target.value;
+                localStorage.setItem('sortBy', sortBy);
+                render();
+            });
+
+            const grid = document.getElementById('studentGrid');
+            processed.forEach(student => {
+                const count = notes.filter(n => n.studentId === student.id).length;
+                const flagIcons = FLAGS.map(f => 
+                    student.flags[f.id] ? `<span class="${f.color}">${f.icon}</span>` : ''
+                ).join('');
+
+                const card = document.createElement('button');
+                card.className = 'bg-white p-4 rounded-3xl border border-slate-200 shadow-sm text-left hover:border-indigo-300 transition-all flex flex-col justify-between';
+                card.innerHTML = `
+                    <div>
+                        <div class="font-bold text-slate-800 mb-1 truncate">${student.name}</div>
+                        <div class="flex flex-wrap gap-1.5 h-6 mb-2">${flagIcons}</div>
+                    </div>
+                    <span class="text-[10px] font-bold uppercase ${count > 0 ? 'text-indigo-500' : 'text-slate-300'}">${count} ${count === 1 ? 'Entry' : 'Entries'}</span>
+                `;
+                card.onclick = () => openStudent(student.id);
+                grid.appendChild(card);
+            });
+        }
+
+        function renderSetup(container) {
+            container.innerHTML = `
+                <div class="space-y-6">
+                    <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-200">
+                        <h2 class="text-lg font-semibold mb-2">Add Students</h2>
+                        <textarea id="bulkInput" placeholder="Paste names here (one per line)..." 
+                            class="w-full h-48 p-4 rounded-2xl bg-slate-50 border border-slate-200 focus:ring-2 focus:ring-indigo-500 focus:outline-none transition-all"></textarea>
+                        <div class="mt-4 flex gap-3">
+                            <button id="importBtn" class="flex-1 bg-indigo-600 text-white font-semibold py-3 rounded-2xl hover:bg-indigo-700 disabled:opacity-50 transition-all shadow-md">
+                                Import Class List
+                            </button>
+                            <button onclick="showDashboard()" class="px-6 py-3 rounded-2xl bg-slate-100 text-slate-600 font-medium">Cancel</button>
+                        </div>
+                        <button onclick="clearAllStudents()" class="w-full mt-4 py-2 text-rose-500 text-xs font-bold uppercase hover:bg-rose-50 rounded-2xl transition-colors">
+                            🗑️ Remove All Students (Testing Only)
+                        </button>
+                    </div>
+                </div>
+            `;
+
+            const input = document.getElementById('bulkInput');
+            const btn = document.getElementById('importBtn');
+            
+            input.addEventListener('input', () => {
+                btn.disabled = !input.value.trim();
+            });
+
+            btn.onclick = () => {
+                const names = input.value.split('\n').map(n => n.trim()).filter(n => n.length > 0);
+                const newStudents = names.map(name => ({
+                    id: crypto.randomUUID(),
+                    name,
+                    flags: { iep: false, diagnosis: false, rmp: false, behavioral: false }
+                }));
+                students.push(...newStudents);
+                saveData();
+                showDashboard();
+            };
+            btn.disabled = true;
+        }
+
+        function renderAllNotes(container) {
+            container.innerHTML = `
+                <div class="space-y-4">
+                    <div class="flex items-center justify-between mb-2">
+                        <h2 class="text-2xl font-bold">Class Timeline</h2>
+                        <button onclick="showDashboard()" class="p-2 hover:bg-slate-200 rounded-full transition-colors">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <line x1="18" y1="6" x2="6" y2="18"></line>
+                                <line x1="6" y1="6" x2="18" y2="18"></line>
+                            </svg>
+                        </button>
+                    </div>
+                    <div id="notesList"></div>
+                </div>
+            `;
+
+            const list = document.getElementById('notesList');
+            notes.forEach(note => {
+                const student = students.find(s => s.id === note.studentId);
+                const category = OBSERVATION_TREE[note.categoryId];
+                const noteEl = document.createElement('div');
+                noteEl.className = 'bg-white p-4 rounded-2xl border border-slate-100 shadow-sm';
+                noteEl.innerHTML = `
+                    <div class="flex justify-between items-start mb-2">
+                        <div class="flex flex-col">
+                            <span class="font-bold text-indigo-600">${student?.name || 'Unknown'}</span>
+                            <span class="text-[10px] text-slate-400 uppercase font-bold">${new Date(note.timestamp).toLocaleDateString()}</span>
+                        </div>
+                        <div class="flex gap-1">
+                            ${note.subjectId ? `<span class="px-2 py-0.5 rounded-full bg-slate-100 text-slate-500 text-[8px] font-bold uppercase">${note.subjectId}</span>` : ''}
+                            <span class="px-2 py-0.5 rounded-full text-[8px] font-bold uppercase ${category?.color}">${note.categoryId}</span>
+                        </div>
+                    </div>
+                    <p class="text-slate-700 text-sm">${note.text}</p>
+                `;
+                list.appendChild(noteEl);
+            });
+        }
+
+        function getProcessedStudents() {
+            let result = [...students];
+            if (searchTerm) {
+                result = result.filter(s => s.name.toLowerCase().includes(searchTerm.toLowerCase()));
+            }
+            result.sort((a, b) => {
+                if (sortBy === 'first_name') return a.name.localeCompare(b.name);
+                if (sortBy === 'last_name') {
+                    const aLast = a.name.split(' ').pop() || '';
+                    const bLast = b.name.split(' ').pop() || '';
+                    return aLast.localeCompare(bLast);
+                }
+                if (sortBy === 'entries') {
+                    const aCount = notes.filter(n => n.studentId === a.id).length;
+                    const bCount = notes.filter(n => n.studentId === b.id).length;
+                    return bCount - aCount;
+                }
+                return 0;
+            });
+            return result;
+        }
+
+        function openStudent(id) {
+            selectedStudentId = id;
+            const student = students.find(s => s.id === id);
+            if (!student) return;
+
+            activeCategory = null;
+            activeSubject = null;
+            activeSub = null;
+            noteText = '';
+
+            document.getElementById('studentName').textContent = student.name;
+            document.getElementById('studentOverlay').classList.remove('hidden');
+            document.getElementById('studentOverlay').classList.add('flex');
+            
+            renderStudentContent(student);
+        }
+
+        function closeStudentOverlay() {
+            selectedStudentId = null;
+            document.getElementById('studentOverlay').classList.add('hidden');
+            document.getElementById('studentOverlay').classList.remove('flex');
+            render();
+        }
+
+        function openCustomTablesManager() {
+            document.getElementById('customTablesOverlay').classList.remove('hidden');
+            document.getElementById('customTablesOverlay').classList.add('flex');
+            renderCustomTablesManager();
+        }
+
+        function closeCustomTablesOverlay() {
+            document.getElementById('customTablesOverlay').classList.add('hidden');
+            document.getElementById('customTablesOverlay').classList.remove('flex');
+        }
+
+        function renderCustomTablesManager() {
+            const container = document.getElementById('customTablesContent');
+            container.innerHTML = `
+                <div class="space-y-6">
+                    <p class="text-sm text-slate-600">Customize your observation categories, sub-categories, and quick-pick tablets.</p>
+                    
+                    <!-- Add Custom Category -->
+                    <div class="p-4 rounded-2xl border-2 border-indigo-200 bg-indigo-50">
+                        <h3 class="font-bold text-slate-800 mb-3">➕ Add New Category</h3>
+                        <div class="flex gap-2 mb-3">
+                            <input type="text" id="newCategoryName" placeholder="Category name (e.g., Attendance)..." 
+                                class="flex-1 px-3 py-2 rounded-lg text-sm border border-slate-300 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                            <button onclick="addCustomCategory()" class="px-4 py-2 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700">Create</button>
+                        </div>
+                    </div>
+
+                    <!-- Manage Categories -->
+                    <div id="categoriesList"></div>
+                </div>
+            `;
+
+            renderCategoriesList();
+        }
+
+        function renderCategoriesList() {
+            const container = document.getElementById('categoriesList');
+            container.innerHTML = '';
+
+            Object.entries(OBSERVATION_TREE).forEach(([catId, category]) => {
+                const isCustom = !['academic', 'behavior', 'wellbeing'].includes(catId);
+                const customList = customTablets[catId] || [];
+                
+                const section = document.createElement('div');
+                section.className = `p-4 rounded-2xl border border-slate-200 ${isCustom ? 'bg-purple-50' : 'bg-slate-50'}`;
+                section.innerHTML = `
+                    <div class="flex justify-between items-start mb-3">
+                        <h3 class="font-bold text-slate-800">${category.label}</h3>
+                        <button onclick="removeCustomCategory('${catId}')" class="text-rose-500 hover:text-rose-700 font-bold">Delete</button>
+                    </div>
+                `;
+
+                // Sub-categories section
+                if (category.sub || category.subjects) {
+                    const subs = category.subjects || category.sub;
+                    const subList = document.createElement('div');
+                    subList.className = 'mb-4 pb-4 border-b border-slate-200';
+                    subList.innerHTML = `<p class="text-xs font-bold text-slate-500 mb-2">SUB-CATEGORIES</p><div class="flex flex-wrap gap-2" id="subs-${catId}"></div>`;
+                    
+                    const subsContainer = subList.querySelector(`#subs-${catId}`);
+                    Object.entries(subs).forEach(([subId, sub]) => {
+                        const tag = document.createElement('span');
+                        tag.className = `px-2.5 py-1 rounded-full text-xs font-medium flex items-center gap-1 bg-slate-200 text-slate-700`;
+                        tag.innerHTML = `${sub.label} <button onclick="removeCustomSubCategory('${catId}', '${subId}')" class="ml-1 font-bold text-slate-500 hover:text-slate-800">×</button>`;
+                        subsContainer.appendChild(tag);
+                    });
+                    section.appendChild(subList);
+                    
+                    // Add sub-category
+                    if (isCustom) {
+                        const addSubDiv = document.createElement('div');
+                        addSubDiv.className = 'mb-4 pb-4 border-b border-slate-200';
+                        addSubDiv.innerHTML = `
+                            <p class="text-xs font-bold text-slate-500 mb-2">ADD SUB-CATEGORY</p>
+                            <div class="flex gap-2">
+                                <input type="text" id="subCat-${catId}" placeholder="Sub-category name..." 
+                                    class="flex-1 px-2 py-1 rounded text-sm border border-slate-300 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                                <button onclick="addCustomSubCategory('${catId}')" class="px-3 py-1 bg-indigo-600 text-white rounded font-medium hover:bg-indigo-700 text-sm">Add</button>
+                            </div>
+                        `;
+                        section.appendChild(addSubDiv);
+                    }
+                }
+
+                // Quick tablets
+                const tabletsDiv = document.createElement('div');
+                tabletsDiv.className = 'mb-3 pb-3 border-b border-slate-200';
+                tabletsDiv.innerHTML = `<p class="text-xs font-bold text-slate-500 mb-2">QUICK TABLETS</p><div class="flex flex-wrap gap-2 mb-3" id="custom-${catId}"></div>`;
+                
+                const listEl = tabletsDiv.querySelector(`#custom-${catId}`);
+                customList.forEach((text, idx) => {
+                    const tag = document.createElement('div');
+                    tag.className = 'px-3 py-1.5 bg-yellow-100 text-yellow-800 rounded-full text-sm font-medium flex items-center gap-2';
+                    tag.innerHTML = `${text} <button onclick="removeCustomTablet('${catId}', ${idx})" class="text-yellow-600 hover:text-yellow-800 font-bold">×</button>`;
+                    listEl.appendChild(tag);
+                });
+                section.appendChild(tabletsDiv);
+
+                // Add tablet input
+                const addDiv = document.createElement('div');
+                addDiv.className = 'flex gap-2';
+                addDiv.innerHTML = `
+                    <input type="text" id="input-${catId}" placeholder="Add quick tablet..." 
+                        class="flex-1 px-3 py-2 rounded-lg text-sm border border-slate-300 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                    <button onclick="addCustomTablet('${catId}')" class="px-4 py-2 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700">Add</button>
+                `;
+                
+                const input = addDiv.querySelector(`#input-${catId}`);
+                input.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') addCustomTablet(catId);
+                });
+                
+                section.appendChild(addDiv);
+                container.appendChild(section);
+            });
+        }
+
+        function addCustomCategory() {
+            const input = document.getElementById('newCategoryName');
+            const name = input.value.trim();
+            if (!name) return;
+
+            const id = name.toLowerCase().replace(/\s+/g, '_');
+            OBSERVATION_TREE[id] = {
+                label: name,
+                color: 'bg-purple-100 text-purple-700 border-purple-200',
+                icon: '✨',
+                isCustom: true,
+                sub: {}
+            };
+            customTablets[id] = [];
+            saveCustomTablets();
+            input.value = '';
+            renderCustomTablesManager();
+        }
+
+        function removeCustomCategory(categoryId) {
+            if (confirm(`Remove "${OBSERVATION_TREE[categoryId].label}" category?`)) {
+                delete OBSERVATION_TREE[categoryId];
+                delete customTablets[categoryId];
+                saveCustomTablets();
+                renderCustomTablesManager();
+            }
+        }
+
+        function addCustomSubCategory(categoryId) {
+            const input = document.getElementById(`subCat-${categoryId}`);
+            const name = input.value.trim();
+            if (!name) return;
+
+            const id = name.toLowerCase().replace(/\s+/g, '_');
+            const category = OBSERVATION_TREE[categoryId];
+            if (!category.sub) category.sub = {};
+            category.sub[id] = {
+                label: name,
+                bubbles: [],
+                isCustom: true
+            };
+            saveCustomTablets();
+            input.value = '';
+            renderCustomTablesManager();
+        }
+
+        function removeCustomSubCategory(categoryId, subId) {
+            if (confirm(`Remove sub-category?`)) {
+                const category = OBSERVATION_TREE[categoryId];
+                if (category.subjects && category.subjects[categoryId]) {
+                    // For academic subjects
+                    delete category.subjects[categoryId].sub[subId];
+                } else if (category.sub) {
+                    delete category.sub[subId];
+                }
+                saveCustomTablets();
+                renderCustomTablesManager();
+            }
+        }
+
+        function addCustomTablet(categoryId) {
+            const input = document.getElementById(`input-${categoryId}`);
+            const text = input.value.trim();
+            if (!text) return;
+
+            if (!customTablets[categoryId]) {
+                customTablets[categoryId] = [];
+            }
+            customTablets[categoryId].push(text);
+            saveCustomTablets();
+            input.value = '';
+            renderCustomTablesManager();
+        }
+
+        function removeCustomTablet(categoryId, index) {
+            customTablets[categoryId].splice(index, 1);
+            saveCustomTablets();
+            renderCustomTablesManager();
+        }
+
+        let currentPin = '';
+        let firstPin = '';
+        let isConfirmingPin = false;
+
+        function addDigit(digit) {
+            if (currentPin.length < 4) {
+                currentPin += digit;
+                updatePinDisplay();
+                
+                if (currentPin.length === 4) {
+                    setTimeout(() => {
+                        const hasPassword = localStorage.getItem(PASSWORD_KEY);
+                        if (!hasPassword) {
+                            // Creating new PIN
+                            if (!isConfirmingPin) {
+                                // First entry
+                                firstPin = currentPin;
+                                isConfirmingPin = true;
+                                currentPin = '';
+                                document.getElementById('pinStatus').textContent = 'Re-enter PIN to confirm';
+                                updatePinDisplay();
+                            } else {
+                                // Confirmation entry
+                                if (currentPin === firstPin) {
+                                    localStorage.setItem(PASSWORD_KEY, currentPin);
+                                    isAuthenticated = true;
+                                    currentView = 'dashboard';
+                                    currentPin = '';
+                                    firstPin = '';
+                                    isConfirmingPin = false;
+                                    render();
+                                } else {
+                                    document.getElementById('pinStatus').textContent = 'PINs do not match. Try again';
+                                    document.getElementById('pinStatus').classList.add('text-rose-500');
+                                    currentPin = '';
+                                    firstPin = '';
+                                    isConfirmingPin = false;
+                                    updatePinDisplay();
+                                    setTimeout(() => {
+                                        document.getElementById('pinStatus').textContent = 'Enter your PIN';
+                                        document.getElementById('pinStatus').classList.remove('text-rose-500');
+                                    }, 2000);
+                                }
+                            }
+                        } else {
+                            // Verifying existing PIN
+                            verifyPinPad();
+                        }
+                    }, 100);
+                }
+            }
+        }
+
+        function deleteDigit() {
+            currentPin = currentPin.slice(0, -1);
+            updatePinDisplay();
+        }
+
+        function clearPin() {
+            currentPin = '';
+            updatePinDisplay();
+        }
+
+        function updatePinDisplay() {
+            for (let i = 1; i <= 4; i++) {
+                const digit = document.getElementById(`digit${i}`);
+                if (digit) {
+                    if (i <= currentPin.length) {
+                        digit.textContent = '●';
+                        digit.classList.add('bg-indigo-100', 'border-indigo-500');
+                    } else {
+                        digit.textContent = '';
+                        digit.classList.remove('bg-indigo-100', 'border-indigo-500');
+                    }
+                }
+            }
+        }
+
+        function verifyPinPad() {
+            const savedPin = localStorage.getItem(PASSWORD_KEY);
+            const errorMsg = document.getElementById('pinError');
+            
+            if (currentPin === savedPin) {
+                isAuthenticated = true;
+                currentView = 'dashboard';
+                currentPin = '';
+                render();
+            } else {
+                errorMsg.classList.remove('hidden');
+                for (let i = 1; i <= 4; i++) {
+                    const digit = document.getElementById(`digit${i}`);
+                    if (digit) {
+                        digit.classList.add('border-rose-500', 'bg-rose-50');
+                        digit.classList.remove('border-indigo-500', 'bg-indigo-100');
+                    }
+                }
+                currentPin = '';
+                setTimeout(() => {
+                    errorMsg.classList.add('hidden');
+                    updatePinDisplay();
+                }, 2000);
+            }
+        }
+
+        function clearAllStudents() {
+            if (confirm("⚠️ This will delete ALL students and their notes. Continue?")) {
+                students = [];
+                notes = [];
+                saveData();
+                showDashboard();
+            }
+        }
+
+        function createPin() {
+            const input = document.getElementById('newPin');
+            const pin = input.value.trim();
+            
+            if (pin.length !== 4 || !/^\d{4}$/.test(pin)) {
+                alert('Please enter a 4-digit PIN');
+                return;
+            }
+            
+            localStorage.setItem(PASSWORD_KEY, pin);
+            isAuthenticated = true;
+            currentView = 'dashboard';
+            render();
+        }
+
+        function verifyPin() {
+            const input = document.getElementById('loginPin');
+            const pin = input.value.trim();
+            const savedPin = localStorage.getItem(PASSWORD_KEY);
+            const errorMsg = document.getElementById('pinError');
+            
+            if (pin === savedPin) {
+                isAuthenticated = true;
+                currentView = 'dashboard';
+                render();
+            } else {
+                errorMsg.classList.remove('hidden');
+                input.value = '';
+                input.classList.add('border-rose-500');
+                setTimeout(() => {
+                    errorMsg.classList.add('hidden');
+                    input.classList.remove('border-rose-500');
+                }, 2000);
+            }
+        }
+
+        function resetPin() {
+            if (confirm('⚠️ This will reset your PIN and DELETE ALL DATA. Continue?')) {
+                localStorage.clear();
+                students = [];
+                notes = [];
+                customTablets = {};
+                isAuthenticated = false;
+                currentView = 'welcome';
+                render();
+            }
+        }
+
+        function renderStudentContent(student) {
+            const container = document.getElementById('studentContent');
+            const studentNotes = notes.filter(n => n.studentId === student.id);
+
+            container.innerHTML = `
+                <!-- Flags -->
+                <section>
+                    <h3 class="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 mb-3">Student Profile</h3>
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-2" id="flagsGrid"></div>
+                </section>
+
+                <!-- Note Taking -->
+                <section class="space-y-4">
+                    <h3 class="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">New Observation</h3>
+                    <div class="flex gap-2 overflow-x-auto pb-1 no-scrollbar" id="categoryButtons"></div>
+                    <div id="subjectButtons"></div>
+                    <div id="subButtons"></div>
+                    <div id="bubbleButtons"></div>
+                    <div class="relative group">
+                        <textarea id="noteTextarea" placeholder="Type your observation or use quick bubbles above..." 
+                            class="w-full p-4 pr-12 rounded-2xl bg-slate-50 border-none focus:ring-2 focus:ring-indigo-500 transition-all min-h-[120px] text-slate-700 leading-relaxed shadow-inner"></textarea>
+                        <button id="saveNoteBtn" class="hidden absolute bottom-3 right-3 p-3 bg-indigo-600 text-white rounded-xl shadow-lg hover:bg-indigo-700 active:scale-90 transition-all">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                                <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                            </svg>
+                        </button>
+                    </div>
+                </section>
+
+                <!-- History -->
+                <section>
+                    <h3 class="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 mb-4">Observation History</h3>
+                    <div class="space-y-3" id="historyList"></div>
+                </section>
+
+                <button onclick="deleteStudent('${student.id}')" class="w-full flex items-center justify-center gap-2 py-4 text-rose-500 text-xs font-bold uppercase tracking-widest hover:bg-rose-50 rounded-2xl transition-colors">
+                    🗑️ Remove Student from Hub
+                </button>
+            `;
+
+            // Render flags
+            const flagsGrid = document.getElementById('flagsGrid');
+            FLAGS.forEach(flag => {
+                const btn = document.createElement('button');
+                btn.className = `flex flex-col items-center gap-1.5 p-3 rounded-2xl border-2 transition-all ${student.flags[flag.id] ? `${flag.bg} border-indigo-200` : 'bg-slate-50 border-transparent'}`;
+                btn.innerHTML = `
+                    <span class="text-lg ${student.flags[flag.id] ? flag.color : 'text-slate-300'}">${flag.icon}</span>
+                    <span class="text-[10px] font-bold ${student.flags[flag.id] ? 'text-slate-800' : 'text-slate-400'}">${flag.label}</span>
+                `;
+                btn.onclick = () => toggleFlag(student.id, flag.id);
+                flagsGrid.appendChild(btn);
+            });
+
+            // Category buttons
+            renderCategoryButtons();
+
+            // Note textarea
+            const textarea = document.getElementById('noteTextarea');
+            const saveBtn = document.getElementById('saveNoteBtn');
+            textarea.value = noteText;
+            textarea.addEventListener('input', (e) => {
+                noteText = e.target.value;
+                saveBtn.classList.toggle('hidden', !noteText.trim());
+            });
+            saveBtn.onclick = () => addNote(student.id);
+
+            // History
+            const historyList = document.getElementById('historyList');
+            if (studentNotes.length === 0) {
+                historyList.innerHTML = '<p class="text-center py-6 text-slate-400 text-sm">No history recorded.</p>';
+            } else {
+                studentNotes.forEach(note => {
+                    const category = OBSERVATION_TREE[note.categoryId];
+                    const noteEl = document.createElement('div');
+                    noteEl.className = 'p-4 bg-slate-50 rounded-2xl flex gap-4';
+                    noteEl.innerHTML = `
+                        <div class="w-1 h-auto rounded-full ${category?.color.split(' ')[0]}"></div>
+                        <div class="flex-1">
+                            <p class="text-sm text-slate-700 mb-1">${note.text}</p>
+                            <div class="flex justify-between items-center">
+                                <div class="flex gap-1 items-center">
+                                    <span class="text-[10px] font-bold text-slate-400 uppercase">${new Date(note.timestamp).toLocaleDateString()}</span>
+                                    ${note.subjectId ? `<span class="text-[8px] font-bold uppercase px-1.5 py-0.5 bg-slate-200 text-slate-600 rounded-full">${note.subjectId}</span>` : ''}
+                                </div>
+                                <span class="text-[8px] font-bold uppercase px-2 py-0.5 rounded-full ${category?.color}">${note.categoryId}</span>
+                            </div>
+                        </div>
+                    `;
+                    historyList.appendChild(noteEl);
+                });
+            }
+        }
+
+        function renderCategoryButtons() {
+            const container = document.getElementById('categoryButtons');
+            container.innerHTML = '';
+            
+            // Existing categories
+            Object.entries(OBSERVATION_TREE).forEach(([id, cat]) => {
+                const btn = document.createElement('button');
+                btn.className = `flex-none flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-bold border-2 transition-all ${activeCategory === id ? cat.color : 'bg-white border-slate-100 text-slate-400'}`;
+                btn.innerHTML = `<span>${cat.icon}</span>${cat.label}`;
+                btn.onclick = () => {
+                    activeCategory = id;
+                    activeSubject = null;
+                    activeSub = null;
+                    renderSubjectButtons();
+                    renderSubButtons();
+                    renderBubbles();
+                };
+                container.appendChild(btn);
+            });
+            
+            // Add new category button
+            const addBtn = document.createElement('button');
+            addBtn.className = 'flex-none flex items-center gap-2 px-4 py-2.5 rounded-full text-sm font-bold border-2 bg-emerald-50 border-emerald-200 text-emerald-700 hover:bg-emerald-100';
+            addBtn.innerHTML = `<span>➕</span>Add`;
+            addBtn.onclick = () => {
+                const name = prompt('Category name:');
+                if (name && name.trim()) {
+                    const id = name.toLowerCase().replace(/\s+/g, '_');
+                    if (!OBSERVATION_TREE[id]) {
+                        OBSERVATION_TREE[id] = {
+                            label: name,
+                            color: 'bg-emerald-100 text-emerald-700 border-emerald-200',
+                            icon: '✨',
+                            isCustom: true,
+                            sub: {}
+                        };
+                        customTablets[id] = [];
+                        saveCustomTablets();
+                        renderCategoryButtons();
+                    } else {
+                        alert('Category already exists!');
+                    }
+                }
+            };
+            container.appendChild(addBtn);
+        }
+
+        function renderSubjectButtons() {
+            const container = document.getElementById('subjectButtons');
+            if (activeCategory !== 'academic') {
+                container.innerHTML = '';
+                return;
+            }
+
+            container.innerHTML = '<div class="flex gap-2 overflow-x-auto no-scrollbar" id="subjectBtnList"></div>';
+            const list = document.getElementById('subjectBtnList');
+            Object.entries(OBSERVATION_TREE.academic.subjects).forEach(([id, sub]) => {
+                const btn = document.createElement('button');
+                btn.className = `flex-none px-4 py-2 rounded-xl text-xs font-bold transition-all border ${activeSubject === id ? 'bg-blue-600 text-white border-blue-600' : 'bg-slate-100 text-slate-500 border-transparent'}`;
+                btn.textContent = sub.label;
+                btn.onclick = () => {
+                    activeSubject = id;
+                    activeSub = null;
+                    renderSubButtons();
+                    renderBubbles();
+                };
+                list.appendChild(btn);
+            });
+            
+            // Add new subject button
+            const addBtn = document.createElement('button');
+            addBtn.className = 'flex-none px-3 py-2 rounded-xl text-xs font-bold transition-all border bg-emerald-50 border-emerald-200 text-emerald-700 hover:bg-emerald-100';
+            addBtn.textContent = '➕ Add';
+            addBtn.onclick = () => {
+                const name = prompt('Subject name:');
+                if (name && name.trim()) {
+                    const id = name.toLowerCase().replace(/\s+/g, '_');
+                    if (!OBSERVATION_TREE.academic.subjects[id]) {
+                        OBSERVATION_TREE.academic.subjects[id] = {
+                            label: name,
+                            isCustom: true,
+                            sub: {}
+                        };
+                        saveCustomTablets();
+                        renderSubjectButtons();
+                    } else {
+                        alert('Subject already exists!');
+                    }
+                }
+            };
+            list.appendChild(addBtn);
+        }
+
+        function renderSubButtons() {
+            const container = document.getElementById('subButtons');
+            if (!activeCategory || (activeCategory === 'academic' && !activeSubject)) {
+                container.innerHTML = '';
+                return;
+            }
+
+            const subs = activeCategory === 'academic' 
+                ? OBSERVATION_TREE.academic.subjects[activeSubject].sub 
+                : OBSERVATION_TREE[activeCategory].sub;
+
+            container.innerHTML = '<div class="flex gap-2 overflow-x-auto no-scrollbar" id="subBtnList"></div>';
+            const list = document.getElementById('subBtnList');
+            Object.entries(subs).forEach(([id, sub]) => {
+                const btn = document.createElement('button');
+                btn.className = `flex-none px-4 py-2 rounded-xl text-xs font-bold transition-all border ${activeSub === id ? 'bg-indigo-600 text-white border-indigo-600 shadow-md shadow-indigo-100' : 'bg-slate-100 text-slate-500 border-transparent'}`;
+                btn.textContent = sub.label;
+                btn.onclick = () => {
+                    activeSub = id;
+                    renderBubbles();
+                };
+                list.appendChild(btn);
+            });
+            
+            // Add new sub-category button
+            const addBtn = document.createElement('button');
+            addBtn.className = 'flex-none px-3 py-2 rounded-xl text-xs font-bold transition-all border bg-emerald-50 border-emerald-200 text-emerald-700 hover:bg-emerald-100';
+            addBtn.textContent = '➕ Add';
+            addBtn.onclick = () => {
+                const name = prompt('Sub-category name:');
+                if (name && name.trim()) {
+                    const id = name.toLowerCase().replace(/\s+/g, '_');
+                    const target = activeCategory === 'academic' 
+                        ? OBSERVATION_TREE.academic.subjects[activeSubject].sub 
+                        : OBSERVATION_TREE[activeCategory].sub;
+                    
+                    if (!target[id]) {
+                        target[id] = {
+                            label: name,
+                            bubbles: [],
+                            isCustom: true
+                        };
+                        saveCustomTablets();
+                        renderSubButtons();
+                    } else {
+                        alert('Sub-category already exists!');
+                    }
+                }
+            };
+            list.appendChild(addBtn);
+        }
+
+        function renderBubbles() {
+            const container = document.getElementById('bubbleButtons');
+            if (!activeSub) {
+                container.innerHTML = '';
+                return;
+            }
+
+            const bubbles = activeCategory === 'academic'
+                ? OBSERVATION_TREE.academic.subjects[activeSubject].sub[activeSub].bubbles
+                : OBSERVATION_TREE[activeCategory].sub[activeSub].bubbles;
+
+            // Add custom tablets for this category
+            const key = `${activeCategory}`;
+            const customBubbles = customTablets[key] || [];
+            const allBubbles = [...bubbles, ...customBubbles];
+
+            container.innerHTML = '<div class="space-y-2" id="bubblesWrapper"></div>';
+            const wrapper = document.getElementById('bubblesWrapper');
+            
+            // Tablet buttons
+            const listDiv = document.createElement('div');
+            listDiv.className = 'flex flex-wrap gap-2 p-3 bg-indigo-50/50 rounded-2xl border border-indigo-100';
+            listDiv.id = 'bubbleList';
+            
+            allBubbles.forEach((text, idx) => {
+                const btn = document.createElement('button');
+                const isCustom = idx >= bubbles.length;
+                btn.className = `px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${isCustom ? 'bg-yellow-50 text-yellow-700 border border-yellow-100 hover:bg-yellow-100' : 'bg-white text-indigo-700 border border-indigo-100 hover:bg-indigo-50'} active:scale-95`;
+                btn.textContent = `+ ${text}`;
+                btn.onclick = () => appendToNote(text);
+                listDiv.appendChild(btn);
+            });
+            wrapper.appendChild(listDiv);
+            
+            // Add new tablet input
+            const addDiv = document.createElement('div');
+            addDiv.className = 'flex gap-2 p-3 bg-emerald-50/50 rounded-2xl border border-emerald-100';
+            addDiv.innerHTML = `
+                <input type="text" id="newTabletInput" placeholder="Add quick tablet..." 
+                    class="flex-1 px-3 py-1.5 rounded-lg text-xs border border-emerald-200 focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                <button onclick="addNewTabletQuick()" class="px-3 py-1.5 bg-emerald-600 text-white rounded-lg text-xs font-medium hover:bg-emerald-700">Add</button>
+            `;
+            wrapper.appendChild(addDiv);
+            
+            // Allow Enter key to add
+            setTimeout(() => {
+                const input = document.getElementById('newTabletInput');
+                if (input) {
+                    input.addEventListener('keypress', (e) => {
+                        if (e.key === 'Enter') addNewTabletQuick();
+                    });
+                }
+            }, 0);
+        }
+
+        function addNewTabletQuick() {
+            const input = document.getElementById('newTabletInput');
+            const text = input.value.trim();
+            if (!text || !activeCategory) return;
+
+            if (!customTablets[activeCategory]) {
+                customTablets[activeCategory] = [];
+            }
+            customTablets[activeCategory].push(text);
+            saveCustomTablets();
+            input.value = '';
+            renderBubbles();
+        }
+
+        function appendToNote(text) {
+            const prefix = noteText.length > 0 && !noteText.endsWith(' ') ? ' ' : '';
+            noteText = noteText + prefix + text + '.';
+            document.getElementById('noteTextarea').value = noteText;
+            document.getElementById('saveNoteBtn').classList.remove('hidden');
+        }
+
+        function toggleFlag(studentId, flagId) {
+            const student = students.find(s => s.id === studentId);
+            if (student) {
+                student.flags[flagId] = !student.flags[flagId];
+                saveData();
+                renderStudentContent(student);
+            }
+        }
+
+        function addNote(studentId) {
+            if (!noteText.trim() || !activeCategory) return;
+            
+            notes.unshift({
+                id: crypto.randomUUID(),
+                studentId,
+                categoryId: activeCategory,
+                subjectId: activeSubject,
+                text: noteText,
+                timestamp: new Date().toISOString()
+            });
+            
+            noteText = '';
+            activeCategory = null;
+            activeSubject = null;
+            activeSub = null;
+            
+            saveData();
+            const student = students.find(s => s.id === studentId);
+            renderStudentContent(student);
+        }
+
+        function deleteStudent(id) {
+            if (confirm("Remove student and all associated notes?")) {
+                students = students.filter(s => s.id !== id);
+                notes = notes.filter(n => n.studentId !== id);
+                saveData();
+                closeStudentOverlay();
+            }
+        }
+
+        function showDashboard() {
+            currentView = 'dashboard';
+            render();
+        }
+
+        function showSetup() {
+            currentView = 'setup';
+            render();
+        }
+
+        function showAllNotes() {
+            currentView = 'all-notes';
+            render();
+        }
+
+        // Event listeners
+        document.getElementById('setupBtn').addEventListener('click', showSetup);
+        document.getElementById('customTablesBtn').addEventListener('click', openCustomTablesManager);
+        document.getElementById('timelineBtn').addEventListener('click', () => {
+            if (currentView === 'all-notes') {
+                showDashboard();
+            } else {
+                showAllNotes();
+            }
+        });
+
+        // Initialize
+        loadData();
+        render();
+    </script>
+</body>
+</html>

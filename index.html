@@ -626,6 +626,30 @@
             }
         }
 
+        function markStudentViewed(id) {
+            const viewedIds = getViewedStudentIds();
+            if (!viewedIds.includes(id)) {
+                viewedIds.push(id);
+                localStorage.setItem('viewed_students', JSON.stringify(viewedIds));
+            }
+        }
+
+        function updateStudentNameDisplay(student, showTags) {
+            const nameEl = document.getElementById('studentName');
+            if (!nameEl) return;
+            if (!showTags) {
+                nameEl.textContent = student.name;
+                return;
+            }
+            const icons = FLAGS.filter(flag => student.flags[flag.id])
+                .map(flag => `<span class="text-base ${flag.color}">${flag.icon}</span>`)
+                .join('');
+            nameEl.innerHTML = `
+                <span>${student.name}</span>
+                ${icons ? `<span class="ml-3 inline-flex items-center gap-1.5">${icons}</span>` : ''}
+            `;
+        }
+
         function openStudent(id) {
             selectedStudentId = id;
             const student = students.find(s => s.id === id);
@@ -636,21 +660,16 @@
             activeSub = null;
             noteText = '';
 
-            document.getElementById('studentName').textContent = student.name;
-            document.getElementById('studentOverlay').classList.remove('hidden');
-            document.getElementById('studentOverlay').classList.add('flex');
-
             const viewedIds = getViewedStudentIds();
             const isFirstView = !viewedIds.includes(id);
             currentStudentFirstView = isFirstView;
+            updateStudentNameDisplay(student, !isFirstView);
+            document.getElementById('studentOverlay').classList.remove('hidden');
+            document.getElementById('studentOverlay').classList.add('flex');
+
             currentStudentFadeOnOpen = !isFirstView;
             renderStudentContent(student, currentStudentFirstView, currentStudentFadeOnOpen);
             currentStudentFadeOnOpen = false;
-
-            if (isFirstView) {
-                viewedIds.push(id);
-                localStorage.setItem('viewed_students', JSON.stringify(viewedIds));
-            }
         }
 
         function closeStudentOverlay() {
@@ -1036,13 +1055,50 @@
             const container = document.getElementById('studentContent');
             const studentNotes = notes.filter(n => n.studentId === student.id);
 
-            container.innerHTML = `
-                <!-- Flags -->
-                <section>
-                    <h3 class="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 mb-3">Student Profile</h3>
-                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-2" id="flagsGrid"></div>
-                </section>
+            if (isFirstView) {
+                container.innerHTML = `
+                    <section class="space-y-4">
+                        <div>
+                            <h3 class="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 mb-2">Student Tags</h3>
+                            <p class="text-sm text-slate-600">Add quick tags now, or skip and start taking notes.</p>
+                        </div>
+                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2" id="flagsGrid"></div>
+                        <div class="flex gap-3 pt-2">
+                            <button id="continueToNotes" class="flex-1 bg-indigo-600 text-white font-semibold py-3 rounded-2xl hover:bg-indigo-700 transition-all">Continue to Notes</button>
+                            <button id="skipTags" class="flex-1 bg-slate-100 text-slate-600 font-semibold py-3 rounded-2xl hover:bg-slate-200 transition-all">Skip for Now</button>
+                        </div>
+                    </section>
+                `;
 
+                const flagsGrid = document.getElementById('flagsGrid');
+                FLAGS.forEach(flag => {
+                    const btn = document.createElement('button');
+                    const fadeClass = fadeOnOpen ? 'opacity-0 fade-in' : '';
+                    btn.className = `flex flex-col items-center gap-2 p-4 sm:p-5 text-base ${fadeClass} rounded-2xl border-2 transition-all ${student.flags[flag.id] ? `${flag.bg} border-indigo-200` : 'bg-slate-50 border-transparent'}`;
+                    btn.innerHTML = `
+                        <span class="text-2xl ${student.flags[flag.id] ? flag.color : 'text-slate-300'}">${flag.icon}</span>
+                        <span class="text-[10px] font-bold ${student.flags[flag.id] ? 'text-slate-800' : 'text-slate-400'}">${flag.label}</span>
+                    `;
+                    btn.onclick = () => toggleFlag(student.id, flag.id);
+                    flagsGrid.appendChild(btn);
+                });
+
+                document.getElementById('continueToNotes').onclick = () => {
+                    markStudentViewed(student.id);
+                    currentStudentFirstView = false;
+                    updateStudentNameDisplay(student, true);
+                    renderStudentContent(student, false, false);
+                };
+                document.getElementById('skipTags').onclick = () => {
+                    markStudentViewed(student.id);
+                    currentStudentFirstView = false;
+                    updateStudentNameDisplay(student, true);
+                    renderStudentContent(student, false, false);
+                };
+                return;
+            }
+
+            container.innerHTML = `
                 <!-- Note Taking -->
                 <section class="space-y-4">
                     <h3 class="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">New Observation</h3>
@@ -1072,20 +1128,6 @@
                     🗑️ Remove Student from Hub
                 </button>
             `;
-
-            // Render flags
-            const flagsGrid = document.getElementById('flagsGrid');
-            FLAGS.forEach(flag => {
-                const btn = document.createElement('button');
-                const fadeClass = fadeOnOpen ? 'opacity-0 fade-in' : '';
-                btn.className = `flex flex-col items-center ${isFirstView ? 'gap-2 p-4 sm:p-5 text-base' : 'gap-1 p-2 text-sm'} ${fadeClass} rounded-2xl border-2 transition-all ${student.flags[flag.id] ? `${flag.bg} border-indigo-200` : 'bg-slate-50 border-transparent'}`;
-                btn.innerHTML = `
-                    <span class="${isFirstView ? 'text-2xl' : 'text-lg'} ${student.flags[flag.id] ? flag.color : 'text-slate-300'}">${flag.icon}</span>
-                    ${isFirstView ? `<span class="text-[10px] font-bold ${student.flags[flag.id] ? 'text-slate-800' : 'text-slate-400'}">${flag.label}</span>` : `<span class="sr-only">${flag.label}</span>`}
-                `;
-                btn.onclick = () => toggleFlag(student.id, flag.id);
-                flagsGrid.appendChild(btn);
-            });
 
             // Category buttons
             renderCategoryButtons();

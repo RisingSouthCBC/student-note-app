@@ -10,6 +10,7 @@
     <style>
         html, body {
             touch-action: manipulation;
+            background: linear-gradient(180deg, #f8fafc 0%, #f8fafc 60%, #eef2ff 100%);
         }
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
@@ -56,9 +57,27 @@
         .fade-in {
             animation: fadeIn 0.4s ease-out forwards;
         }
+        .text-slate-400 { color: #64748b !important; }
+        .text-slate-500 { color: #475569 !important; }
+        button.bg-indigo-600 {
+            box-shadow: 0 12px 24px rgba(79, 70, 229, 0.22);
+            border: 1px solid rgba(67, 56, 202, 0.3);
+        }
+        button.bg-indigo-600:hover {
+            box-shadow: 0 16px 28px rgba(79, 70, 229, 0.28);
+        }
+        /* Desktop optimizations */
+        @media (min-width: 1024px) {
+            body {
+                padding-bottom: 0;
+            }
+            #mainContent {
+                max-w-6xl;
+            }
+        }
     </style>
 </head>
-<body class="min-h-screen bg-slate-50 text-slate-900 font-sans pb-24 overflow-x-hidden">
+<body class="min-h-screen bg-slate-50 text-slate-900 font-sans pb-24 lg:pb-0 overflow-x-hidden">
     
     <!-- Header -->
     <header class="sticky top-0 z-30 bg-white/80 backdrop-blur-md border-b border-slate-200 px-4 py-3 flex items-center justify-between">
@@ -94,10 +113,10 @@
         </div>
     </header>
 
-    <main id="mainContent" class="max-w-4xl mx-auto p-4"></main>
+    <main id="mainContent" class="max-w-4xl lg:max-w-6xl mx-auto p-4 lg:p-6"></main>
 
     <!-- Footer -->
-    <footer class="fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-md border-t border-slate-200 px-4 py-3 flex items-center justify-center gap-4 text-sm">
+    <footer class="fixed bottom-0 left-0 right-0 lg:static bg-white/80 backdrop-blur-md border-t border-slate-200 px-4 lg:px-6 py-3 flex items-center justify-center gap-4 text-sm">
         <span class="text-slate-500">Made with ❤️ for teachers</span>
         <span class="text-slate-300">•</span>
         <a href="https://www.buymeacoffee.com/yourusername" target="_blank" 
@@ -112,10 +131,10 @@
     </footer>
 
     <!-- Student Overlay -->
-    <div id="studentOverlay" class="fixed inset-0 z-50 hidden items-end sm:items-center justify-center p-0 sm:p-4 bg-slate-900/60 backdrop-blur-sm">
-        <div class="bg-white w-full max-w-2xl h-[95vh] sm:h-auto sm:max-h-[90vh] rounded-t-[2.5rem] sm:rounded-[2.5rem] shadow-2xl flex flex-col overflow-hidden">
-            <div class="p-6 pb-4 flex items-center justify-between border-b border-slate-100">
-                <h2 id="studentName" class="text-2xl font-extrabold text-slate-900"></h2>
+    <div id="studentOverlay" class="fixed inset-0 z-50 hidden items-end sm:items-center justify-center p-0 sm:p-4 lg:p-6 bg-slate-900/60 backdrop-blur-sm">
+        <div class="bg-white w-full max-w-2xl lg:max-w-5xl h-[95vh] sm:h-auto sm:max-h-[90vh] lg:max-h-[95vh] rounded-t-[2.5rem] sm:rounded-[2.5rem] shadow-2xl flex flex-col overflow-hidden">
+            <div class="p-6 pb-4 lg:p-8 flex items-center justify-between border-b border-slate-100">
+                <h2 id="studentName" class="text-2xl lg:text-3xl font-extrabold text-slate-900"></h2>
                 <div class="flex gap-2">
                     <button id="exportStudentBtn" class="p-2 bg-slate-100 rounded-full text-slate-500 hover:bg-slate-200 hover:text-slate-700 transition-colors" title="Export this student">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -132,15 +151,15 @@
                     </button>
                 </div>
             </div>
-            <div id="studentContent" class="flex-1 overflow-y-auto p-6 space-y-8 pb-10"></div>
+            <div id="studentContent" class="flex-1 overflow-y-auto p-6 lg:p-8 space-y-8 pb-10"></div>
         </div>
     </div>
 
     <!-- Custom Tables Manager Overlay -->
-    <div id="customTablesOverlay" class="fixed inset-0 z-50 hidden items-end sm:items-center justify-center p-0 sm:p-4 bg-slate-900/60 backdrop-blur-sm">
-        <div class="bg-white w-full max-w-2xl h-[95vh] sm:h-auto sm:max-h-[90vh] rounded-t-[2.5rem] sm:rounded-[2.5rem] shadow-2xl flex flex-col overflow-hidden">
-            <div class="p-6 pb-4 flex items-center justify-between border-b border-slate-100">
-                <h2 class="text-2xl font-extrabold text-slate-900">Custom Tablets</h2>
+    <div id="customTablesOverlay" class="fixed inset-0 z-50 hidden items-end sm:items-center justify-center p-0 sm:p-4 lg:p-6 bg-slate-900/60 backdrop-blur-sm">
+        <div class="bg-white w-full max-w-2xl lg:max-w-5xl h-[95vh] sm:h-auto sm:max-h-[90vh] lg:max-h-[95vh] rounded-t-[2.5rem] sm:rounded-[2.5rem] shadow-2xl flex flex-col overflow-hidden">
+            <div class="p-6 pb-4 lg:p-8 flex items-center justify-between border-b border-slate-100">
+                <h2 class="text-2xl lg:text-3xl font-extrabold text-slate-900">Custom Tablets</h2>
                 <button onclick="closeCustomTablesOverlay()" class="p-2 bg-slate-100 rounded-full text-slate-400 hover:text-slate-600">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <line x1="18" y1="6" x2="6" y2="18"></line>
@@ -148,15 +167,15 @@
                     </svg>
                 </button>
             </div>
-            <div id="customTablesContent" class="flex-1 overflow-y-auto p-6 space-y-6 pb-10"></div>
+            <div id="customTablesContent" class="flex-1 overflow-y-auto p-6 lg:p-8 space-y-6 pb-10"></div>
         </div>
     </div>
 
     <!-- Export Report Overlay -->
-    <div id="exportOverlay" class="fixed inset-0 z-50 hidden items-end sm:items-center justify-center p-0 sm:p-4 bg-slate-900/60 backdrop-blur-sm">
-        <div class="bg-white w-full max-w-2xl h-[95vh] sm:h-auto sm:max-h-[90vh] rounded-t-[2.5rem] sm:rounded-[2.5rem] shadow-2xl flex flex-col overflow-hidden">
-            <div class="p-6 pb-4 flex items-center justify-between border-b border-slate-100">
-                <h2 class="text-2xl font-extrabold text-slate-900">Export Report</h2>
+    <div id="exportOverlay" class="fixed inset-0 z-50 hidden items-end sm:items-center justify-center p-0 sm:p-4 lg:p-6 bg-slate-900/60 backdrop-blur-sm">
+        <div class="bg-white w-full max-w-2xl lg:max-w-5xl h-[95vh] sm:h-auto sm:max-h-[90vh] lg:max-h-[95vh] rounded-t-[2.5rem] sm:rounded-[2.5rem] shadow-2xl flex flex-col overflow-hidden">
+            <div class="p-6 pb-4 lg:p-8 flex items-center justify-between border-b border-slate-100">
+                <h2 class="text-2xl lg:text-3xl font-extrabold text-slate-900">Export Report</h2>
                 <button onclick="closeExportOverlay()" class="p-2 bg-slate-100 rounded-full text-slate-400 hover:text-slate-600">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <line x1="18" y1="6" x2="6" y2="18"></line>
@@ -164,7 +183,7 @@
                     </svg>
                 </button>
             </div>
-            <div id="exportContent" class="flex-1 overflow-y-auto p-6 space-y-6 pb-10"></div>
+            <div id="exportContent" class="flex-1 overflow-y-auto p-6 lg:p-8 space-y-6 pb-10"></div>
         </div>
     </div>
 
@@ -489,7 +508,7 @@
                             </select>
                         </div>
                     </div>
-                    <div class="grid grid-cols-2 md:grid-cols-3 gap-4" id="studentGrid"></div>
+                    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4" id="studentGrid"></div>
                 </div>
             `;
 
@@ -1409,8 +1428,7 @@
                         </div>
                         <div class="grid grid-cols-2 sm:grid-cols-4 gap-2" id="flagsGrid"></div>
                         <div class="flex gap-3 pt-2">
-                            <button id="continueToNotes" class="flex-1 bg-indigo-600 text-white font-semibold py-3 rounded-2xl hover:bg-indigo-700 transition-all">Continue to Notes</button>
-                            <button id="skipTags" class="flex-1 bg-slate-100 text-slate-600 font-semibold py-3 rounded-2xl hover:bg-slate-200 transition-all">Skip for Now</button>
+                            <button id="continueToNotes" class="w-full bg-indigo-600 text-white font-semibold py-3 rounded-2xl hover:bg-indigo-700 transition-all">Save & Continue</button>
                         </div>
                     </section>
                 `;
@@ -1434,26 +1452,26 @@
                     updateStudentNameDisplay(student, true);
                     renderStudentContent(student, false, false);
                 };
-                document.getElementById('skipTags').onclick = () => {
-                    markStudentViewed(student.id);
-                    currentStudentFirstView = false;
-                    updateStudentNameDisplay(student, true);
-                    renderStudentContent(student, false, false);
-                };
                 return;
             }
 
             container.innerHTML = `
+                <!-- Flags Section -->
+                <section class="space-y-4">
+                    <h3 class="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">Quick Tags</h3>
+                    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2" id="flagsGridMain"></div>
+                </section>
+
                 <!-- Note Taking -->
                 <section class="space-y-4">
                     <h3 class="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">New Observation</h3>
-                    <div class="flex gap-2 overflow-x-auto pb-1 no-scrollbar" id="categoryButtons"></div>
+                    <div class="flex gap-2 overflow-x-auto pb-1 no-scrollbar lg:flex-wrap lg:overflow-visible" id="categoryButtons"></div>
                     <div id="subjectButtons"></div>
                     <div id="subButtons"></div>
                     <div id="bubbleButtons"></div>
                     <div class="relative">
                         <textarea id="noteTextarea" placeholder="Type your observation or use quick bubbles above..." 
-                            class="w-full p-4 rounded-2xl bg-slate-50 border-none focus:ring-2 focus:ring-indigo-500 transition-all min-h-[120px] text-slate-700 leading-relaxed shadow-inner"></textarea>
+                            class="w-full p-4 rounded-2xl bg-slate-50 border-none focus:ring-2 focus:ring-indigo-500 transition-all min-h-[120px] lg:min-h-[100px] text-slate-700 leading-relaxed shadow-inner"></textarea>
                     </div>
                     <button id="saveNoteBtn" class="hidden w-full bg-indigo-600 text-white font-bold py-4 rounded-2xl hover:bg-indigo-700 active:scale-[0.98] transition-all shadow-lg flex items-center justify-center gap-2">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -1467,13 +1485,26 @@
                 <!-- History -->
                 <section>
                     <h3 class="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 mb-4">Observation History</h3>
-                    <div class="space-y-3" id="historyList"></div>
+                    <div class="space-y-3 lg:grid lg:grid-cols-2 lg:gap-4" id="historyList"></div>
                 </section>
 
                 <button onclick="deleteStudent('${student.id}')" class="w-full flex items-center justify-center gap-2 py-4 text-rose-500 text-xs font-bold uppercase tracking-widest hover:bg-rose-50 rounded-2xl transition-colors">
                     🗑️ Remove Student from Hub
                 </button>
             `;
+
+            // Render flag buttons
+            const flagsGridMain = document.getElementById('flagsGridMain');
+            FLAGS.forEach(flag => {
+                const btn = document.createElement('button');
+                btn.className = `flex flex-col items-center gap-1.5 p-3 sm:p-4 text-sm rounded-2xl border-2 transition-all ${student.flags[flag.id] ? `${flag.bg} border-indigo-200` : 'bg-slate-50 border-transparent hover:bg-slate-100'}`;
+                btn.innerHTML = `
+                    <span class="text-xl sm:text-2xl ${student.flags[flag.id] ? flag.color : 'text-slate-300'}">${flag.icon}</span>
+                    <span class="text-[9px] sm:text-[10px] font-bold ${student.flags[flag.id] ? 'text-slate-800' : 'text-slate-400'} text-center leading-tight">${flag.label}</span>
+                `;
+                btn.onclick = () => toggleFlag(student.id, flag.id);
+                flagsGridMain.appendChild(btn);
+            });
 
             // Category buttons
             renderCategoryButtons();
@@ -1491,22 +1522,20 @@
             // History
             const historyList = document.getElementById('historyList');
             if (studentNotes.length === 0) {
-                historyList.innerHTML = '<p class="text-center py-6 text-slate-400 text-sm">No history recorded.</p>';
+                historyList.innerHTML = '<p class="col-span-1 lg:col-span-2 text-center py-6 text-slate-400 text-sm">No history recorded.</p>';
             } else {
                 studentNotes.forEach(note => {
                     const category = OBSERVATION_TREE[note.categoryId];
                     const noteEl = document.createElement('div');
-                    noteEl.className = 'p-4 bg-slate-50 rounded-2xl flex gap-4';
+                    noteEl.className = 'p-4 lg:p-5 bg-slate-50 rounded-2xl flex gap-4 border border-slate-200 shadow-sm';
                     noteEl.innerHTML = `
                         <div class="w-1 h-auto rounded-full ${category?.color.split(' ')[0]}"></div>
-                        <div class="flex-1">
-                            <p class="text-sm text-slate-700 mb-1">${note.text}</p>
-                            <div class="flex justify-between items-center">
-                                <div class="flex gap-1 items-center">
-                                    <span class="text-[10px] font-bold text-slate-400 uppercase">${new Date(note.timestamp).toLocaleString()}</span>
-                                    ${note.subjectId ? `<span class="text-[8px] font-bold uppercase px-1.5 py-0.5 bg-slate-200 text-slate-600 rounded-full">${note.subjectId}</span>` : ''}
-                                </div>
-                                <span class="text-[8px] font-bold uppercase px-2 py-0.5 rounded-full ${category?.color}">${note.categoryId}</span>
+                        <div class="flex-1 min-w-0">
+                            <p class="text-sm text-slate-700 mb-1 break-words">${note.text}</p>
+                            <div class="flex flex-wrap gap-2 items-center">
+                                <span class="text-[10px] font-bold text-slate-400 uppercase whitespace-nowrap">${new Date(note.timestamp).toLocaleString()}</span>
+                                ${note.subjectId ? `<span class="text-[8px] font-bold uppercase px-1.5 py-0.5 bg-slate-200 text-slate-600 rounded-full whitespace-nowrap">${note.subjectId}</span>` : ''}
+                                <span class="text-[8px] font-bold uppercase px-2 py-0.5 rounded-full ${category?.color} whitespace-nowrap">${note.categoryId}</span>
                             </div>
                         </div>
                     `;
@@ -1522,8 +1551,8 @@
             // Existing categories
             Object.entries(OBSERVATION_TREE).forEach(([id, cat]) => {
                 const btn = document.createElement('button');
-                btn.className = `flex-none flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-bold border-2 transition-all ${activeCategory === id ? cat.color : 'bg-white border-slate-100 text-slate-400'}`;
-                btn.innerHTML = `<span>${cat.icon}</span>${cat.label}`;
+                btn.className = `flex-none lg:flex-1 flex items-center justify-center lg:justify-start gap-2 px-5 py-2.5 rounded-full text-sm font-bold border-2 transition-all ${activeCategory === id ? cat.color : 'bg-white border-slate-100 text-slate-400'}`;
+                btn.innerHTML = `<span>${cat.icon}</span><span class="hidden lg:inline">${cat.label}</span>`;
                 btn.onclick = () => {
                     activeCategory = id;
                     activeSubject = null;
@@ -1537,7 +1566,7 @@
             
             // Add new category button
             const addBtn = document.createElement('button');
-            addBtn.className = 'flex-none flex items-center gap-2 px-4 py-2.5 rounded-full text-sm font-bold border-2 bg-emerald-50 border-emerald-200 text-emerald-700 hover:bg-emerald-100';
+            addBtn.className = 'flex-none lg:flex-1 flex items-center justify-center lg:justify-start gap-2 px-4 py-2.5 rounded-full text-sm font-bold border-2 bg-emerald-50 border-emerald-200 text-emerald-700 hover:bg-emerald-100';
             addBtn.textContent = 'Add';
             addBtn.onclick = () => {
                 const name = prompt('Category name:');
@@ -1692,15 +1721,25 @@
                 btn.onclick = () => appendToNote(text);
                 listDiv.appendChild(btn);
             });
+            
+            // Add "Create new tablet" button inline with existing tablets
+            const addBtn = document.createElement('button');
+            addBtn.className = 'px-3 py-1.5 rounded-lg text-xs font-medium transition-all bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 active:scale-95';
+            addBtn.innerHTML = '+ Add Quick Label';
+            addBtn.onclick = () => showTabletInput();
+            listDiv.appendChild(addBtn);
+            
             wrapper.appendChild(listDiv);
             
-            // Add new tablet input
+            // Hidden input field for adding new tablets (shown on demand)
             const addDiv = document.createElement('div');
-            addDiv.className = 'flex gap-2 p-3 bg-emerald-50/50 rounded-2xl border border-emerald-100';
+            addDiv.id = 'tabletInputContainer';
+            addDiv.className = 'hidden gap-2 p-3 bg-emerald-50/50 rounded-2xl border border-emerald-100';
             addDiv.innerHTML = `
-                <input type="text" id="newTabletInput" placeholder="Add quick tablet..." 
+                <input type="text" id="newTabletInput" placeholder="Type new label and press Enter..." 
                     class="flex-1 px-3 py-1.5 rounded-lg text-xs border border-emerald-200 focus:ring-2 focus:ring-emerald-500 focus:outline-none">
-                <button onclick="addNewTabletQuick()" class="px-3 py-1.5 bg-emerald-600 text-white rounded-lg text-xs font-medium hover:bg-emerald-700">Add</button>
+                <button onclick="addNewTabletQuick()" class="px-3 py-1.5 bg-emerald-600 text-white rounded-lg text-xs font-medium hover:bg-emerald-700">Save</button>
+                <button onclick="hideTabletInput()" class="px-3 py-1.5 bg-slate-100 text-slate-600 rounded-lg text-xs font-medium hover:bg-slate-200">Cancel</button>
             `;
             wrapper.appendChild(addDiv);
             
@@ -1715,6 +1754,30 @@
             }, 0);
         }
 
+        function showTabletInput() {
+            const container = document.getElementById('tabletInputContainer');
+            const input = document.getElementById('newTabletInput');
+            if (container) {
+                container.classList.remove('hidden');
+                container.classList.add('flex');
+                if (input) {
+                    input.focus();
+                }
+            }
+        }
+
+        function hideTabletInput() {
+            const container = document.getElementById('tabletInputContainer');
+            const input = document.getElementById('newTabletInput');
+            if (container) {
+                container.classList.add('hidden');
+                container.classList.remove('flex');
+                if (input) {
+                    input.value = '';
+                }
+            }
+        }
+
         function addNewTabletQuick() {
             const input = document.getElementById('newTabletInput');
             const text = input.value.trim();
@@ -1726,6 +1789,7 @@
             customTablets[activeCategory].push(text);
             saveCustomTablets();
             input.value = '';
+            hideTabletInput();
             renderBubbles();
         }
 

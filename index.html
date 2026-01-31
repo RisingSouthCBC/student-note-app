@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Student Observation Hub</title>
+    <title>Observe</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         .no-scrollbar::-webkit-scrollbar { display: none; }
@@ -14,13 +14,50 @@
             background-clip: text;
             color: transparent;
         }
+        @keyframes slideInUp {
+            from {
+                transform: translateY(100px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+        @keyframes slideOutDown {
+            from {
+                transform: translateY(0);
+                opacity: 1;
+            }
+            to {
+                transform: translateY(100px);
+                opacity: 0;
+            }
+        }
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+        .toast {
+            animation: slideInUp 0.3s ease-out;
+        }
+        .toast.hide {
+            animation: slideOutDown 0.3s ease-out forwards;
+        }
+        .fade-in {
+            animation: fadeIn 0.4s ease-out forwards;
+        }
     </style>
 </head>
 <body class="min-h-screen bg-slate-50 text-slate-900 font-sans pb-24 overflow-x-hidden">
     
     <!-- Header -->
     <header class="sticky top-0 z-30 bg-white/80 backdrop-blur-md border-b border-slate-200 px-4 py-3 flex items-center justify-between">
-        <h1 class="text-xl font-bold bg-gradient-text">Observation Hub</h1>
+        <h1 class="text-xl font-bold bg-gradient-text">Observe</h1>
         <div class="flex gap-2">
             <button id="timelineBtn" class="p-2 rounded-full transition-colors text-slate-500 hover:bg-slate-100 hidden">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -31,9 +68,7 @@
             <button id="customTablesBtn" class="p-2 text-slate-500 hover:bg-slate-100 rounded-full transition-colors" title="Settings">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <circle cx="12" cy="12" r="3"></circle>
-                    <path d="M12 1v6m0 6v6m0-13a9 9 0 0 1 9 9 9 9 0 0 1-9 9 9 9 0 0 1-9-9 9 9 0 0 1 9-9z"></path>
-                    <path d="M12 1v6m0 6v6M1 12h6m6 0h6"></path>
-                    <path d="M4.22 4.22l1.42 1.42m12.72 12.72 1.42 1.42M4.22 19.78l1.42-1.42m12.72-12.72 1.42-1.42"></path>
+                    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9c0 .7.4 1.34 1.03 1.64.33.16.68.24 1.03.24H21a2 2 0 0 1 0 4h-.09c-.35 0-.7.08-1.03.24-.63.3-1.03.94-1.03 1.64z"></path>
                 </svg>
             </button>
             <button id="setupBtn" class="p-2 text-slate-500 hover:bg-slate-100 rounded-full transition-colors">
@@ -106,6 +141,10 @@
         </div>
     </div>
 
+    <!-- Toast Container -->
+    <div id="toastContainer" class="fixed bottom-24 left-4 right-4 sm:left-auto sm:right-4 sm:max-w-md z-40"></div>
+    <input id="importFileInput" type="file" accept="application/json" class="hidden" />
+
     <script>
         const STORAGE_KEY = 'teacher_hub_data';
         const CUSTOM_TABLETS_KEY = 'custom_tablets';
@@ -118,6 +157,8 @@
         let searchTerm = '';
         let sortBy = 'first_name';
         let isAuthenticated = false;
+        let currentStudentFirstView = false;
+        let currentStudentFadeOnOpen = false;
         
         // Observation state
         let activeCategory = null;
@@ -183,10 +224,34 @@
 
         const FLAGS = [
             { id: 'iep', label: 'IEP', icon: '📋', color: 'text-purple-600', bg: 'bg-purple-50' },
-            { id: 'diagnosis', label: 'Diagnosis', icon: '🩺', color: 'text-indigo-600', bg: 'bg-indigo-50' },
+            { id: 'diagnosis', label: 'Diagnosis', icon: '🧠', color: 'text-indigo-600', bg: 'bg-indigo-50' },
             { id: 'rmp', label: 'RMP', icon: '🛡️', color: 'text-rose-600', bg: 'bg-rose-50' },
-            { id: 'behavioral', label: 'Behavioral', icon: '⚠️', color: 'text-orange-600', bg: 'bg-orange-50' }
+            { id: 'behavioral', label: 'Behavioral', icon: '⚠️', color: 'text-orange-600', bg: 'bg-orange-50' },
+            { id: 'medical', label: 'Medical', icon: '💊', color: 'text-emerald-600', bg: 'bg-emerald-50' }
         ];
+
+        // Toast notification system
+        function showToast(message, action = null, duration = 4000) {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = 'toast bg-white rounded-2xl shadow-lg border border-slate-200 p-4 mb-3 flex items-center justify-between gap-4';
+            
+            let html = `<div><p class="text-sm font-medium text-slate-800">${message}</p></div>`;
+            
+            if (action) {
+                html += `<a href="${action.href}" target="_blank" class="flex-none px-3 py-1.5 bg-indigo-600 text-white text-xs font-bold rounded-lg hover:bg-indigo-700 transition-colors">
+                    ${action.label}
+                </a>`;
+            }
+            
+            toast.innerHTML = html;
+            container.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.classList.add('hide');
+                setTimeout(() => toast.remove(), 300);
+            }, duration);
+        }
 
         // Load data
         function loadData() {
@@ -258,6 +323,16 @@
             if (currentView === 'dashboard') {
                 renderDashboard(main);
                 fab.classList.toggle('hidden', selectedStudentId !== null);
+                // Show welcome message on first login
+                if (!localStorage.getItem('firstLoginShown') && students.length > 0 && notes.length > 0) {
+                    localStorage.setItem('firstLoginShown', 'true');
+                    setTimeout(() => {
+                        showToast("👋 Welcome back! Your observations are secure and always available.", {
+                            label: "Need Help?",
+                            href: "https://github.com/RisingSouthCBC/student-note-app"
+                        });
+                    }, 500);
+                }
             } else if (currentView === 'setup') {
                 renderSetup(main);
                 fab.classList.add('hidden');
@@ -277,7 +352,7 @@
                         <div class="text-center max-w-md px-6">
                             <div class="mb-8">
                                 <h1 class="text-4xl font-bold bg-gradient-to-r from-indigo-600 to-violet-600 bg-clip-text text-transparent mb-3">
-                                    Student Observation Hub
+                                    Observe
                                 </h1>
                                 <p class="text-slate-600 text-lg">Keep track of student observations, notes, and progress all in one place.</p>
                             </div>
@@ -402,6 +477,8 @@
                 render();
             });
 
+            document.getElementById('sortSelect').value = sortBy;
+
             const grid = document.getElementById('studentGrid');
             processed.forEach(student => {
                 const count = notes.filter(n => n.studentId === student.id).length;
@@ -426,6 +503,13 @@
         function renderSetup(container) {
             container.innerHTML = `
                 <div class="space-y-6">
+                    ${students.length > 0 ? `<div class="p-4 bg-emerald-50 border border-emerald-200 rounded-2xl">
+                        <p class="text-sm text-emerald-900"><strong>✨ Customize your workspace.</strong> Own your observation categories and build a system that works for you—data always stays yours.</p>
+                    </div>` : ''}
+                    <div class="p-4 bg-slate-50 border border-slate-200 rounded-2xl flex items-center justify-between">
+                        <p class="text-sm text-slate-700"><strong>Have existing data?</strong> Import a previous backup to restore your class setup.</p>
+                        <button onclick="triggerImportBackup()" class="flex-none px-4 py-2 bg-white text-slate-700 text-xs font-bold rounded-lg border border-slate-200 hover:bg-slate-100 transition-colors">Import Backup</button>
+                    </div>
                     <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-200">
                         <h2 class="text-lg font-semibold mb-2">Add Students</h2>
                         <textarea id="bulkInput" placeholder="Paste names here (one per line)..." 
@@ -476,6 +560,9 @@
                             </svg>
                         </button>
                     </div>
+                    ${notes.length > 10 ? `<div class="p-4 bg-indigo-50 border border-indigo-200 rounded-2xl">
+                        <p class="text-sm text-indigo-900"><strong>📊 You've documented ${notes.length} observations.</strong> That's hours of insight and hours of time saved compared to manual note-taking!</p>
+                    </div>` : ''}
                     <div id="notesList"></div>
                 </div>
             `;
@@ -490,7 +577,7 @@
                     <div class="flex justify-between items-start mb-2">
                         <div class="flex flex-col">
                             <span class="font-bold text-indigo-600">${student?.name || 'Unknown'}</span>
-                            <span class="text-[10px] text-slate-400 uppercase font-bold">${new Date(note.timestamp).toLocaleDateString()}</span>
+                            <span class="text-[10px] text-slate-400 uppercase font-bold">${new Date(note.timestamp).toLocaleString()}</span>
                         </div>
                         <div class="flex gap-1">
                             ${note.subjectId ? `<span class="px-2 py-0.5 rounded-full bg-slate-100 text-slate-500 text-[8px] font-bold uppercase">${note.subjectId}</span>` : ''}
@@ -525,6 +612,17 @@
             return result;
         }
 
+        function getViewedStudentIds() {
+            const saved = localStorage.getItem('viewed_students');
+            if (!saved) return [];
+            try {
+                const parsed = JSON.parse(saved);
+                return Array.isArray(parsed) ? parsed : [];
+            } catch {
+                return [];
+            }
+        }
+
         function openStudent(id) {
             selectedStudentId = id;
             const student = students.find(s => s.id === id);
@@ -538,8 +636,18 @@
             document.getElementById('studentName').textContent = student.name;
             document.getElementById('studentOverlay').classList.remove('hidden');
             document.getElementById('studentOverlay').classList.add('flex');
-            
-            renderStudentContent(student);
+
+            const viewedIds = getViewedStudentIds();
+            const isFirstView = !viewedIds.includes(id);
+            currentStudentFirstView = isFirstView;
+            currentStudentFadeOnOpen = !isFirstView;
+            renderStudentContent(student, currentStudentFirstView, currentStudentFadeOnOpen);
+            currentStudentFadeOnOpen = false;
+
+            if (isFirstView) {
+                viewedIds.push(id);
+                localStorage.setItem('viewed_students', JSON.stringify(viewedIds));
+            }
         }
 
         function closeStudentOverlay() {
@@ -565,6 +673,20 @@
             container.innerHTML = `
                 <div class="space-y-6">
                     <p class="text-sm text-slate-600">Customize your observation categories, sub-categories, and quick-pick tablets.</p>
+                    
+                    <div class="p-4 bg-rose-50 border border-rose-200 rounded-2xl">
+                        <p class="text-sm text-rose-900"><strong>🔒 You own your data.</strong> All observations and customizations stay on your device. No cloud, no tracking, no third-party access. Ever.</p>
+                    </div>
+                    
+                    <div class="p-4 bg-blue-50 border border-blue-200 rounded-2xl">
+                        <div class="flex items-center justify-between">
+                            <p class="text-sm text-blue-900"><strong>💾 Back up your data regularly.</strong> Download your observations to keep safe copies.</p>
+                            <div class="flex gap-2">
+                                <button onclick="downloadBackup()" class="flex-none px-4 py-2 bg-blue-600 text-white text-xs font-bold rounded-lg hover:bg-blue-700 transition-colors">Download</button>
+                                <button onclick="triggerImportBackup()" class="flex-none px-4 py-2 bg-white text-blue-700 text-xs font-bold rounded-lg border border-blue-200 hover:bg-blue-50 transition-colors">Import</button>
+                            </div>
+                        </div>
+                    </div>
                     
                     <!-- Add Custom Category -->
                     <div class="p-4 rounded-2xl border-2 border-indigo-200 bg-indigo-50">
@@ -907,7 +1029,7 @@
             }
         }
 
-        function renderStudentContent(student) {
+        function renderStudentContent(student, isFirstView = false, fadeOnOpen = false) {
             const container = document.getElementById('studentContent');
             const studentNotes = notes.filter(n => n.studentId === student.id);
 
@@ -952,10 +1074,11 @@
             const flagsGrid = document.getElementById('flagsGrid');
             FLAGS.forEach(flag => {
                 const btn = document.createElement('button');
-                btn.className = `flex flex-col items-center gap-1.5 p-3 rounded-2xl border-2 transition-all ${student.flags[flag.id] ? `${flag.bg} border-indigo-200` : 'bg-slate-50 border-transparent'}`;
+                const fadeClass = fadeOnOpen ? 'opacity-0 fade-in' : '';
+                btn.className = `flex flex-col items-center ${isFirstView ? 'gap-2 p-4 sm:p-5 text-base' : 'gap-1 p-2 text-sm'} ${fadeClass} rounded-2xl border-2 transition-all ${student.flags[flag.id] ? `${flag.bg} border-indigo-200` : 'bg-slate-50 border-transparent'}`;
                 btn.innerHTML = `
-                    <span class="text-lg ${student.flags[flag.id] ? flag.color : 'text-slate-300'}">${flag.icon}</span>
-                    <span class="text-[10px] font-bold ${student.flags[flag.id] ? 'text-slate-800' : 'text-slate-400'}">${flag.label}</span>
+                    <span class="${isFirstView ? 'text-2xl' : 'text-lg'} ${student.flags[flag.id] ? flag.color : 'text-slate-300'}">${flag.icon}</span>
+                    ${isFirstView ? `<span class="text-[10px] font-bold ${student.flags[flag.id] ? 'text-slate-800' : 'text-slate-400'}">${flag.label}</span>` : `<span class="sr-only">${flag.label}</span>`}
                 `;
                 btn.onclick = () => toggleFlag(student.id, flag.id);
                 flagsGrid.appendChild(btn);
@@ -989,7 +1112,7 @@
                             <p class="text-sm text-slate-700 mb-1">${note.text}</p>
                             <div class="flex justify-between items-center">
                                 <div class="flex gap-1 items-center">
-                                    <span class="text-[10px] font-bold text-slate-400 uppercase">${new Date(note.timestamp).toLocaleDateString()}</span>
+                                    <span class="text-[10px] font-bold text-slate-400 uppercase">${new Date(note.timestamp).toLocaleString()}</span>
                                     ${note.subjectId ? `<span class="text-[8px] font-bold uppercase px-1.5 py-0.5 bg-slate-200 text-slate-600 rounded-full">${note.subjectId}</span>` : ''}
                                 </div>
                                 <span class="text-[8px] font-bold uppercase px-2 py-0.5 rounded-full ${category?.color}">${note.categoryId}</span>
@@ -1227,7 +1350,7 @@
             if (student) {
                 student.flags[flagId] = !student.flags[flagId];
                 saveData();
-                renderStudentContent(student);
+                renderStudentContent(student, currentStudentFirstView, false);
             }
         }
 
@@ -1243,6 +1366,8 @@
                 timestamp: new Date().toISOString()
             });
             
+            const isFirstNote = notes.length === 1;
+            
             noteText = '';
             activeCategory = null;
             activeSubject = null;
@@ -1250,7 +1375,15 @@
             
             saveData();
             const student = students.find(s => s.id === studentId);
-            renderStudentContent(student);
+            renderStudentContent(student, currentStudentFirstView, false);
+            
+            // Show appreciation toast after first note
+            if (isFirstNote) {
+                showToast("🎉 First observation saved! That normally takes 5 minutes to write. You just saved time!", {
+                    label: "Support Development",
+                    href: "https://www.buymeacoffee.com/yourusername"
+                });
+            }
         }
 
         function deleteStudent(id) {
@@ -1260,6 +1393,62 @@
                 saveData();
                 closeStudentOverlay();
             }
+        }
+
+        function downloadBackup() {
+            const data = {
+                students,
+                notes,
+                customTablets,
+                OBSERVATION_TREE,
+                exportDate: new Date().toISOString()
+            };
+            const json = JSON.stringify(data, null, 2);
+            const blob = new Blob([json], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `observation-hub-backup-${new Date().toISOString().split('T')[0]}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+            
+            showToast("✅ Data backed up successfully! Your observations are saved.", {
+                label: "Support Us",
+                href: "https://www.buymeacoffee.com/yourusername"
+            });
+        }
+
+        function triggerImportBackup() {
+            const input = document.getElementById('importFileInput');
+            if (input) {
+                input.value = '';
+                input.click();
+            }
+        }
+
+        function handleImportFile(file) {
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    students = Array.isArray(data.students) ? data.students : [];
+                    notes = Array.isArray(data.notes) ? data.notes : [];
+                    customTablets = data.customTablets && typeof data.customTablets === 'object' ? data.customTablets : {};
+                    if (data.OBSERVATION_TREE && typeof data.OBSERVATION_TREE === 'object') {
+                        OBSERVATION_TREE = data.OBSERVATION_TREE;
+                    }
+
+                    saveData();
+                    saveCustomTablets();
+
+                    showToast("✅ Backup imported successfully. Your data is restored.");
+                    render();
+                } catch (err) {
+                    showToast("⚠️ Import failed. Please select a valid backup file.");
+                }
+            };
+            reader.readAsText(file);
         }
 
         function showDashboard() {
@@ -1286,6 +1475,10 @@
             } else {
                 showAllNotes();
             }
+        });
+        document.getElementById('importFileInput').addEventListener('change', (e) => {
+            const file = e.target.files && e.target.files[0];
+            handleImportFile(file);
         });
 
         // Initialize

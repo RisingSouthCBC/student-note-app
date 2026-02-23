@@ -179,6 +179,18 @@
     <header class="sticky top-0 z-30 bg-white/80 backdrop-blur-md border-b border-slate-200 px-4 py-3 flex items-center justify-between">
         <h1 class="text-xl font-bold bg-gradient-text">Observe</h1>
         <div class="flex gap-2">
+            <button id="searchNotesBtn" class="p-2 rounded-full transition-colors text-slate-500 hover:bg-slate-100" title="Search Notes (Ctrl+F)">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="11" cy="11" r="8"></circle>
+                    <path d="m21 21-4.35-4.35"></path>
+                </svg>
+            </button>
+            <button id="undoBtn" class="p-2 rounded-full transition-colors text-slate-500 hover:bg-slate-100 hidden" title="Undo (Ctrl+Z)">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M3 7v6h6"></path>
+                    <path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"></path>
+                </svg>
+            </button>
             <button id="themeBtn" class="p-2 rounded-full transition-colors text-slate-500 hover:bg-slate-100" title="Change Theme">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"></path>
@@ -349,6 +361,29 @@
         </div>
     </div>
 
+    <!-- Search Notes Overlay -->
+    <div id="searchNotesOverlay" class="fixed inset-0 z-50 hidden items-start justify-center pt-20 p-4 bg-slate-900/60 backdrop-blur-sm">
+        <div class="bg-white w-full max-w-2xl rounded-2xl shadow-2xl flex flex-col overflow-hidden">
+            <div class="p-4 border-b border-slate-200">
+                <div class="relative">
+                    <svg class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="11" cy="11" r="8"></circle>
+                        <path d="m21 21-4.35-4.35"></path>
+                    </svg>
+                    <input id="noteSearchInput" type="text" placeholder="Search all observations..." 
+                        class="w-full pl-11 pr-4 py-3 rounded-xl bg-slate-50 border border-slate-200 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                </div>
+            </div>
+            <div id="searchResults" class="flex-1 overflow-y-auto p-4 space-y-2 max-h-96">
+                <p class="text-center text-slate-400 py-8">Type to search through all observations</p>
+            </div>
+            <div class="p-3 border-t border-slate-100 bg-slate-50 text-xs text-slate-500 flex justify-between">
+                <span>Press <kbd class="px-2 py-1 bg-white rounded border border-slate-200">Esc</kbd> to close</span>
+                <span id="searchResultCount"></span>
+            </div>
+        </div>
+    </div>
+
     <!-- Toast Container -->
     <div id="toastContainer" class="fixed bottom-24 left-4 right-4 sm:left-auto sm:right-4 sm:max-w-md z-40"></div>
     <input id="importFileInput" type="file" accept="application/json" class="hidden" />
@@ -364,6 +399,7 @@
         let currentView = 'welcome';
         let selectedStudentId = null;
         let searchTerm = '';
+        let noteSearchTerm = '';
         let sortBy = 'first_name';
         let isAuthenticated = false;
         let currentStudentFirstView = false;
@@ -376,6 +412,10 @@
         let activeSub = null;
         let noteText = '';
         let editingNoteId = null;
+        
+        // Undo functionality
+        let undoStack = [];
+        const MAX_UNDO_ITEMS = 10;
 
         let OBSERVATION_TREE = {
             academic: {
@@ -450,9 +490,25 @@
             let html = `<div><p class="text-sm font-medium text-slate-800">${message}</p></div>`;
             
             if (action) {
-                html += `<a href="${action.href}" target="_blank" class="flex-none px-3 py-1.5 bg-indigo-600 text-white text-xs font-bold rounded-lg hover:bg-indigo-700 transition-colors">
-                    ${action.label}
-                </a>`;
+                if (action.href) {
+                    html += `<a href="${action.href}" target="_blank" class="flex-none px-3 py-1.5 bg-indigo-600 text-white text-xs font-bold rounded-lg hover:bg-indigo-700 transition-colors">
+                        ${action.label}
+                    </a>`;
+                } else if (action.action) {
+                    const buttonId = 'toast-btn-' + Date.now();
+                    html += `<button id="${buttonId}" class="flex-none px-3 py-1.5 bg-indigo-600 text-white text-xs font-bold rounded-lg hover:bg-indigo-700 transition-colors">
+                        ${action.label}
+                    </button>`;
+                    setTimeout(() => {
+                        const btn = document.getElementById(buttonId);
+                        if (btn) {
+                            btn.onclick = () => {
+                                action.action();
+                                toast.remove();
+                            };
+                        }
+                    }, 0);
+                }
             }
             
             toast.innerHTML = html;
@@ -478,21 +534,45 @@
                 currentView = 'welcome';
             }
             
-            const saved = localStorage.getItem(STORAGE_KEY);
-            if (saved) {
-                const data = JSON.parse(saved);
-                students = data.students || [];
-                notes = data.notes || [];
+            try {
+                const saved = localStorage.getItem(STORAGE_KEY);
+                if (saved) {
+                    const data = JSON.parse(saved);
+                    students = data.students || [];
+                    notes = data.notes || [];
+                }
+            } catch (error) {
+                console.error('Error loading main data:', error);
+                if (confirm('Data corruption detected. Would you like to reset the app? (This will delete all data)')) {
+                    localStorage.removeItem(STORAGE_KEY);
+                    students = [];
+                    notes = [];
+                } else {
+                    students = [];
+                    notes = [];
+                }
             }
-            const customSaved = localStorage.getItem(CUSTOM_TABLETS_KEY);
-            if (customSaved) {
-                customTablets = JSON.parse(customSaved);
+            
+            try {
+                const customSaved = localStorage.getItem(CUSTOM_TABLETS_KEY);
+                if (customSaved) {
+                    customTablets = JSON.parse(customSaved);
+                }
+            } catch (error) {
+                console.error('Error loading custom tablets:', error);
+                customTablets = {};
             }
-            // Load custom observation tree (categories and sub-categories)
-            const treeSaved = localStorage.getItem('observation_tree');
-            if (treeSaved) {
-                OBSERVATION_TREE = JSON.parse(treeSaved);
+            
+            try {
+                // Load custom observation tree (categories and sub-categories)
+                const treeSaved = localStorage.getItem('observation_tree');
+                if (treeSaved) {
+                    OBSERVATION_TREE = JSON.parse(treeSaved);
+                }
+            } catch (error) {
+                console.error('Error loading observation tree:', error);
             }
+            
             // Load saved sort preference
             const savedSort = localStorage.getItem('sortBy');
             if (savedSort) {
@@ -504,11 +584,44 @@
                 currentTheme = savedTheme;
                 applyTheme(currentTheme);
             }
+            
+            // Check storage quota
+            checkStorageQuota();
         }
 
         // Save data
         function saveData() {
-            localStorage.setItem(STORAGE_KEY, JSON.stringify({ students, notes }));
+            try {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify({ students, notes }));
+                checkStorageQuota();
+            } catch (error) {
+                if (error.name === 'QuotaExceededError') {
+                    alert('⚠️ Storage limit reached! Consider:\n1. Deleting old observations\n2. Removing student photos\n3. Exporting and clearing data');
+                } else {
+                    console.error('Error saving data:', error);
+                    alert('Error saving data. Please try again.');
+                }
+            }
+        }
+        
+        function checkStorageQuota() {
+            try {
+                let total = 0;
+                for (let key in localStorage) {
+                    if (localStorage.hasOwnProperty(key)) {
+                        total += localStorage[key].length + key.length;
+                    }
+                }
+                const usedMB = (total / (1024 * 1024)).toFixed(2);
+                const limitMB = 5; // Most browsers have 5-10MB limit
+                const percentUsed = (usedMB / limitMB) * 100;
+                
+                if (percentUsed > 80) {
+                    showToast(`⚠️ Storage ${percentUsed.toFixed(0)}% full (${usedMB}MB used). Consider backing up and clearing old data.`);
+                }
+            } catch (error) {
+                console.error('Error checking storage:', error);
+            }
         }
 
         function saveCustomTablets() {
@@ -1839,12 +1952,22 @@
                                 <span class="text-[8px] font-bold uppercase px-2 py-0.5 rounded-full ${category?.color} whitespace-nowrap">${note.categoryId}</span>
                             </div>
                         </div>
-                        <button onclick="editNote('${note.id}')" class="opacity-0 group-hover:opacity-100 transition-opacity p-2 h-fit hover:bg-slate-200 rounded-lg" title="Edit note">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-slate-500">
-                                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-                                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-                            </svg>
-                        </button>
+                        <div class="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <button onclick="editNote('${note.id}')" class="p-2 h-fit hover:bg-slate-200 rounded-lg" title="Edit note">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-slate-500">
+                                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                                </svg>
+                            </button>
+                            <button onclick="deleteNote('${note.id}')" class="p-2 h-fit hover:bg-rose-100 rounded-lg" title="Delete note">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-rose-500">
+                                    <polyline points="3 6 5 6 21 6"></polyline>
+                                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                                    <line x1="10" y1="11" x2="10" y2="17"></line>
+                                    <line x1="14" y1="11" x2="14" y2="17"></line>
+                                </svg>
+                            </button>
+                        </div>
                     `;
                     historyList.appendChild(noteEl);
                 });
@@ -2296,12 +2419,112 @@
             }
         }
 
+        function deleteNote(noteId) {
+            if (!confirm('Delete this observation? You can undo this action.')) return;
+            
+            const noteIndex = notes.findIndex(n => n.id === noteId);
+            if (noteIndex === -1) return;
+            
+            const deletedNote = notes[noteIndex];
+            
+            // Add to undo stack
+            addToUndoStack({
+                type: 'note',
+                action: 'delete',
+                data: deletedNote,
+                index: noteIndex
+            });
+            
+            notes.splice(noteIndex, 1);
+            saveData();
+            updateUndoButton();
+            
+            const student = students.find(s => s.id === deletedNote.studentId);
+            if (student && selectedStudentId === student.id) {
+                renderStudentContent(student, currentStudentFirstView, false);
+            } else {
+                render();
+            }
+            
+            showToast('🗑️ Observation deleted', {
+                label: 'Undo',
+                action: () => undoLastAction()
+            });
+        }
+
+        function addToUndoStack(item) {
+            undoStack.push({
+                ...item,
+                timestamp: Date.now()
+            });
+            
+            // Keep only last MAX_UNDO_ITEMS
+            if (undoStack.length > MAX_UNDO_ITEMS) {
+                undoStack.shift();
+            }
+            
+            updateUndoButton();
+        }
+
+        function undoLastAction() {
+            if (undoStack.length === 0) {
+                showToast('Nothing to undo');
+                return;
+            }
+            
+            const lastAction = undoStack.pop();
+            updateUndoButton();
+            
+            // Check if action is too old (more than 2 minutes)
+            if (Date.now() - lastAction.timestamp > 120000) {
+                showToast('Undo expired (too old)');
+                return;
+            }
+            
+            if (lastAction.type === 'note' && lastAction.action === 'delete') {
+                // Restore deleted note at its original position
+                notes.splice(lastAction.index, 0, lastAction.data);
+                saveData();
+                
+                const student = students.find(s => s.id === lastAction.data.studentId);
+                if (student && selectedStudentId === student.id) {
+                    renderStudentContent(student, currentStudentFirstView, false);
+                } else {
+                    render();
+                }
+                
+                showToast('✅ Observation restored');
+            } else if (lastAction.type === 'student' && lastAction.action === 'delete') {
+                // Restore deleted student
+                students.push(lastAction.data.student);
+                notes.push(...lastAction.data.notes);
+                saveData();
+                render();
+                showToast('✅ Student restored');
+            }
+        }
+
         function deleteStudent(id) {
             if (confirm("Remove student and all associated notes?")) {
+                const student = students.find(s => s.id === id);
+                const studentNotes = notes.filter(n => n.studentId === id);
+                
+                // Add to undo stack
+                addToUndoStack({
+                    type: 'student',
+                    action: 'delete',
+                    data: { student, notes: studentNotes }
+                });
+                
                 students = students.filter(s => s.id !== id);
                 notes = notes.filter(n => n.studentId !== id);
                 saveData();
                 closeStudentOverlay();
+                
+                showToast('🗑️ Student deleted', {
+                    label: 'Undo',
+                    action: () => undoLastAction()
+                });
             }
         }
 
@@ -2392,6 +2615,160 @@
             const file = e.target.files && e.target.files[0];
             handleImportFile(file);
         });
+
+        // Search Notes functionality
+        function openSearchNotesOverlay() {
+            document.getElementById('searchNotesOverlay').classList.remove('hidden');
+            document.getElementById('searchNotesOverlay').classList.add('flex');
+            setTimeout(() => {
+                document.getElementById('noteSearchInput').focus();
+            }, 100);
+        }
+
+        function closeSearchNotesOverlay() {
+            document.getElementById('searchNotesOverlay').classList.add('hidden');
+            document.getElementById('searchNotesOverlay').classList.remove('flex');
+            document.getElementById('noteSearchInput').value = '';
+            document.getElementById('searchResults').innerHTML = '<p class="text-center text-slate-400 py-8">Type to search through all observations</p>';
+        }
+
+        function searchNotes(query) {
+            if (!query.trim()) {
+                document.getElementById('searchResults').innerHTML = '<p class="text-center text-slate-400 py-8">Type to search through all observations</p>';
+                document.getElementById('searchResultCount').textContent = '';
+                return;
+            }
+
+            const searchLower = query.toLowerCase();
+            const results = notes.filter(note => {
+                const student = students.find(s => s.id === note.studentId);
+                const studentName = student?.name?.toLowerCase() || '';
+                const noteText = note.text?.toLowerCase() || '';
+                const category = note.categoryId?.toLowerCase() || '';
+                const subject = note.subjectId?.toLowerCase() || '';
+                
+                return noteText.includes(searchLower) || 
+                       studentName.includes(searchLower) ||
+                       category.includes(searchLower) ||
+                       subject.includes(searchLower);
+            });
+
+            const resultsContainer = document.getElementById('searchResults');
+            const countEl = document.getElementById('searchResultCount');
+            
+            countEl.textContent = `${results.length} result${results.length !== 1 ? 's' : ''}`;
+
+            if (results.length === 0) {
+                resultsContainer.innerHTML = '<p class="text-center text-slate-400 py-8">No observations found</p>';
+                return;
+            }
+
+            resultsContainer.innerHTML = '';
+            results.forEach(note => {
+                const student = students.find(s => s.id === note.studentId);
+                const category = OBSERVATION_TREE[note.categoryId];
+                const displayDate = note.createdAt || note.timestamp;
+                
+                // Highlight search term
+                const highlightedText = note.text.replace(
+                    new RegExp(query, 'gi'),
+                    match => `<mark class="bg-yellow-200 px-1 rounded">${match}</mark>`
+                );
+                
+                const resultEl = document.createElement('button');
+                resultEl.className = 'w-full text-left p-3 rounded-xl bg-slate-50 hover:bg-slate-100 transition-colors border border-slate-200';
+                resultEl.innerHTML = `
+                    <div class="flex items-start justify-between gap-2 mb-1">
+                        <span class="font-bold text-indigo-600 text-sm">${student?.name || 'Unknown'}</span>
+                        <span class="text-[10px] text-slate-400 uppercase font-bold whitespace-nowrap">${new Date(displayDate).toLocaleDateString()}</span>
+                    </div>
+                    <p class="text-sm text-slate-700 mb-1">${highlightedText}</p>
+                    <div class="flex gap-1 flex-wrap">
+                        ${note.subjectId ? `<span class="text-[8px] font-bold uppercase px-1.5 py-0.5 bg-slate-200 text-slate-600 rounded-full">${note.subjectId}</span>` : ''}
+                        <span class="text-[8px] font-bold uppercase px-2 py-0.5 rounded-full ${category?.color}">${note.categoryId}</span>
+                    </div>
+                `;
+                resultEl.onclick = () => {
+                    closeSearchNotesOverlay();
+                    openStudent(student.id);
+                };
+                resultsContainer.appendChild(resultEl);
+            });
+        }
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            // Ctrl+F or Cmd+F - Search
+            if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
+                e.preventDefault();
+                if (isAuthenticated && currentView === 'dashboard') {
+                    openSearchNotesOverlay();
+                }
+            }
+            
+            // Ctrl+Z or Cmd+Z - Undo
+            if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
+                e.preventDefault();
+                if (isAuthenticated && undoStack.length > 0) {
+                    undoLastAction();
+                }
+            }
+            
+            // Escape - Close overlays
+            if (e.key === 'Escape') {
+                const searchOverlay = document.getElementById('searchNotesOverlay');
+                const studentOverlay = document.getElementById('studentOverlay');
+                const customTablesOverlay = document.getElementById('customTablesOverlay');
+                const exportOverlay = document.getElementById('exportOverlay');
+                const themeOverlay = document.getElementById('themeOverlay');
+                
+                if (!searchOverlay.classList.contains('hidden')) {
+                    closeSearchNotesOverlay();
+                } else if (!studentOverlay.classList.contains('hidden')) {
+                    closeStudentOverlay();
+                } else if (!customTablesOverlay.classList.contains('hidden')) {
+                    closeCustomTablesOverlay();
+                } else if (!exportOverlay.classList.contains('hidden')) {
+                    closeExportOverlay();
+                } else if (!themeOverlay.classList.contains('hidden')) {
+                    closeThemeOverlay();
+                }
+            }
+            
+            // Ctrl+S or Cmd+S - Save (prevent default browser save)
+            if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+                e.preventDefault();
+                if (editingNoteId || (noteText.trim() && activeCategory)) {
+                    const saveBtn = document.getElementById('saveNoteBtn');
+                    if (saveBtn && !saveBtn.classList.contains('hidden')) {
+                        saveBtn.click();
+                    }
+                }
+            }
+        });
+
+        // Event listeners for search and undo buttons
+        document.getElementById('searchNotesBtn')?.addEventListener('click', openSearchNotesOverlay);
+        document.getElementById('noteSearchInput')?.addEventListener('input', (e) => {
+            searchNotes(e.target.value);
+        });
+        document.getElementById('undoBtn')?.addEventListener('click', undoLastAction);
+        
+        // Update undo button visibility
+        function updateUndoButton() {
+            const undoBtn = document.getElementById('undoBtn');
+            if (undoBtn) {
+                if (undoStack.length > 0) {
+                    undoBtn.classList.remove('hidden');
+                    undoBtn.title = `Undo (${undoStack.length})`;
+                } else {
+                    undoBtn.classList.add('hidden');
+                }
+            }
+        }
+        
+        // Call updateUndoButton periodically
+        setInterval(updateUndoButton, 500);
 
         // Initialize
         loadData();

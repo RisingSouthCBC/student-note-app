@@ -375,6 +375,7 @@
         let activeSubject = null;
         let activeSub = null;
         let noteText = '';
+        let editingNoteId = null;
 
         let OBSERVATION_TREE = {
             academic: {
@@ -828,11 +829,15 @@
                 const category = OBSERVATION_TREE[note.categoryId];
                 const noteEl = document.createElement('div');
                 noteEl.className = 'bg-white p-4 rounded-2xl border border-slate-100 shadow-sm';
+                const displayDate = note.createdAt || note.timestamp;
+                const dateDisplay = note.lastEditedAt
+                    ? `<span class="text-[10px] text-slate-400 uppercase font-bold" title="Created: ${new Date(displayDate).toLocaleString()}">📝 Edited: ${new Date(note.lastEditedAt).toLocaleString()}</span>`
+                    : `<span class="text-[10px] text-slate-400 uppercase font-bold">${new Date(displayDate).toLocaleString()}</span>`;
                 noteEl.innerHTML = `
                     <div class="flex justify-between items-start mb-2">
                         <div class="flex flex-col">
                             <span class="font-bold text-indigo-600">${student?.name || 'Unknown'}</span>
-                            <span class="text-[10px] text-slate-400 uppercase font-bold">${new Date(note.timestamp).toLocaleString()}</span>
+                            ${dateDisplay}
                         </div>
                         <div class="flex gap-1">
                             ${note.subjectId ? `<span class="px-2 py-0.5 rounded-full bg-slate-100 text-slate-500 text-[8px] font-bold uppercase">${note.subjectId}</span>` : ''}
@@ -907,6 +912,8 @@
             const student = students.find(s => s.id === id);
             if (!student) return;
 
+            // Clear editing state when opening a student
+            editingNoteId = null;
             activeCategory = null;
             activeSubject = null;
             activeSub = null;
@@ -931,6 +938,12 @@
 
         function closeStudentOverlay() {
             selectedStudentId = null;
+            // Clear editing state when closing overlay
+            editingNoteId = null;
+            noteText = '';
+            activeCategory = null;
+            activeSubject = null;
+            activeSub = null;
             document.getElementById('studentOverlay').classList.add('hidden');
             document.getElementById('studentOverlay').classList.remove('flex');
             render();
@@ -1192,7 +1205,11 @@
                         if (includeTimestamps) {
                             doc.setFontSize(8);
                             doc.setTextColor(150, 150, 150);
-                            doc.text(new Date(note.timestamp).toLocaleString(), margin + 3, yPos);
+                            const displayDate = note.createdAt || note.timestamp;
+                            const dateText = note.lastEditedAt
+                                ? `Created: ${new Date(displayDate).toLocaleString()} | Edited: ${new Date(note.lastEditedAt).toLocaleString()}`
+                                : new Date(displayDate).toLocaleString();
+                            doc.text(dateText, margin + 3, yPos);
                             doc.setTextColor(0, 0, 0);
                             yPos += 4;
                         }
@@ -1700,7 +1717,10 @@
                             <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
                             <polyline points="22 4 12 14.01 9 11.01"></polyline>
                         </svg>
-                        <span>Save Observation</span>
+                        <span id="saveNoteBtnText">Save Observation</span>
+                    </button>
+                    <button id="cancelEditBtn" class="hidden w-full bg-slate-200 text-slate-700 font-bold py-3 rounded-2xl hover:bg-slate-300 transition-all">
+                        Cancel Edit
                     </button>
                 </section>
 
@@ -1734,12 +1754,32 @@
             // Note textarea
             const textarea = document.getElementById('noteTextarea');
             const saveBtn = document.getElementById('saveNoteBtn');
+            const saveBtnText = document.getElementById('saveNoteBtnText');
+            const cancelBtn = document.getElementById('cancelEditBtn');
+            
             textarea.value = noteText;
+            
+            // Update button text based on editing state
+            if (editingNoteId) {
+                saveBtnText.textContent = 'Update Observation';
+                saveBtn.classList.remove('hidden');
+                cancelBtn.classList.remove('hidden');
+                saveBtn.classList.remove('bg-indigo-600', 'hover:bg-indigo-700');
+                saveBtn.classList.add('bg-emerald-600', 'hover:bg-emerald-700');
+            } else {
+                saveBtnText.textContent = 'Save Observation';
+                cancelBtn.classList.add('hidden');
+                saveBtn.classList.remove('bg-emerald-600', 'hover:bg-emerald-700');
+                saveBtn.classList.add('bg-indigo-600', 'hover:bg-indigo-700');
+            }
+            
             textarea.addEventListener('input', (e) => {
                 noteText = e.target.value;
                 saveBtn.classList.toggle('hidden', !noteText.trim());
             });
+            
             saveBtn.onclick = () => addNote(student.id);
+            cancelBtn.onclick = () => cancelEdit();
 
             // History
             const historyList = document.getElementById('historyList');
@@ -1749,17 +1789,30 @@
                 studentNotes.forEach(note => {
                     const category = OBSERVATION_TREE[note.categoryId];
                     const noteEl = document.createElement('div');
-                    noteEl.className = 'p-4 lg:p-5 bg-slate-50 rounded-2xl flex gap-4 border border-slate-200 shadow-sm';
+                    noteEl.className = 'p-4 lg:p-5 bg-slate-50 rounded-2xl flex gap-4 border border-slate-200 shadow-sm group hover:shadow-md transition-shadow';
+                    
+                    // Ensure backward compatibility
+                    const displayDate = note.createdAt || note.timestamp;
+                    const dateInfo = note.lastEditedAt 
+                        ? `<span class="text-[10px] font-bold text-slate-400 uppercase whitespace-nowrap" title="Created: ${new Date(displayDate).toLocaleString()}">📝 Edited: ${new Date(note.lastEditedAt).toLocaleString()}</span>`
+                        : `<span class="text-[10px] font-bold text-slate-400 uppercase whitespace-nowrap">${new Date(displayDate).toLocaleString()}</span>`;
+                    
                     noteEl.innerHTML = `
                         <div class="w-1 h-auto rounded-full ${category?.color.split(' ')[0]}"></div>
                         <div class="flex-1 min-w-0">
                             <p class="text-sm text-slate-700 mb-1 break-words">${note.text}</p>
                             <div class="flex flex-wrap gap-2 items-center">
-                                <span class="text-[10px] font-bold text-slate-400 uppercase whitespace-nowrap">${new Date(note.timestamp).toLocaleString()}</span>
+                                ${dateInfo}
                                 ${note.subjectId ? `<span class="text-[8px] font-bold uppercase px-1.5 py-0.5 bg-slate-200 text-slate-600 rounded-full whitespace-nowrap">${note.subjectId}</span>` : ''}
                                 <span class="text-[8px] font-bold uppercase px-2 py-0.5 rounded-full ${category?.color} whitespace-nowrap">${note.categoryId}</span>
                             </div>
                         </div>
+                        <button onclick="editNote('${note.id}')" class="opacity-0 group-hover:opacity-100 transition-opacity p-2 h-fit hover:bg-slate-200 rounded-lg" title="Edit note">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-slate-500">
+                                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                            </svg>
+                        </button>
                     `;
                     historyList.appendChild(noteEl);
                 });
@@ -2034,13 +2087,20 @@
         function addNote(studentId) {
             if (!noteText.trim() || !activeCategory) return;
             
+            if (editingNoteId) {
+                // Update existing note
+                updateNote(editingNoteId);
+                return;
+            }
+            
             notes.unshift({
                 id: crypto.randomUUID(),
                 studentId,
                 categoryId: activeCategory,
                 subjectId: activeSubject,
                 text: noteText,
-                timestamp: new Date().toISOString()
+                createdAt: new Date().toISOString(),
+                timestamp: new Date().toISOString() // Keep for backward compatibility
             });
             
             const isFirstNote = notes.length === 1;
@@ -2049,6 +2109,7 @@
             activeCategory = null;
             activeSubject = null;
             activeSub = null;
+            editingNoteId = null;
             
             saveData();
             const student = students.find(s => s.id === studentId);
@@ -2060,6 +2121,73 @@
                     label: "Support Development",
                     href: "https://www.buymeacoffee.com/yourusername"
                 });
+            }
+        }
+
+        function editNote(noteId) {
+            const note = notes.find(n => n.id === noteId);
+            if (!note) return;
+            
+            editingNoteId = noteId;
+            noteText = note.text;
+            activeCategory = note.categoryId;
+            activeSubject = note.subjectId;
+            activeSub = note.subId;
+            
+            const student = students.find(s => s.id === note.studentId);
+            renderStudentContent(student, false, false);
+            
+            // Scroll to textarea
+            setTimeout(() => {
+                const textarea = document.getElementById('noteTextarea');
+                if (textarea) {
+                    textarea.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    textarea.focus();
+                }
+            }, 100);
+        }
+
+        function updateNote(noteId) {
+            const note = notes.find(n => n.id === noteId);
+            if (!note) return;
+            
+            note.text = noteText;
+            note.categoryId = activeCategory;
+            note.subjectId = activeSubject;
+            note.subId = activeSub;
+            note.lastEditedAt = new Date().toISOString();
+            
+            // Ensure createdAt exists (for backward compatibility)
+            if (!note.createdAt && note.timestamp) {
+                note.createdAt = note.timestamp;
+            }
+            
+            // Reset editing state
+            noteText = '';
+            activeCategory = null;
+            activeSubject = null;
+            activeSub = null;
+            editingNoteId = null;
+            
+            // Save and refresh
+            saveData();
+            const student = students.find(s => s.id === note.studentId);
+            renderStudentContent(student, currentStudentFirstView, false);
+            
+            // Show success feedback
+            showToast("✅ Observation updated successfully!");
+        }
+
+        function cancelEdit() {
+            editingNoteId = null;
+            noteText = '';
+            activeCategory = null;
+            activeSubject = null;
+            activeSub = null;
+            
+            const student = students.find(s => s.id === selectedStudentId);
+            if (student) {
+                renderStudentContent(student, currentStudentFirstView, false);
             }
         }
 
